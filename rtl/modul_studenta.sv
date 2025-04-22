@@ -29,6 +29,69 @@ import registers_pkg::*;
 
 registers_pkg::registers__out_t hwif_out;
 
+// Main signals
+logic BCH_coding = 1'b0;
+logic generateNoise = 1'b0;
+logic randomGenerateErrors = 1'b0;
+logic [7:0] numberOfGenerateErrors = 8'b0;
+
+// transmition signals
+logic transmition_Finished = 1'b0;
+
+// flags
+logic BCH_encoded = 1'b0;
+logic BCH_decoded = 1'b0;
+
+typedef enum logic[2:0]{
+	IDLE = 3'h0,
+	ENCODING_BCH = 3'h1,
+	GENERATE_NOISE = 3'h2,
+	GENERATE_ERRORS = 3'h3,
+	DECODING_BCH = 3'h4,
+    FINISHED = 3'h5
+} appState;
+
+appState state;
+
+
+always_ff @(posedge clk or posedge rst)
+begin
+	if (rst == 1'b1) 
+    begin
+        state <= IDLE;
+	end 
+    else if(clk == 1'b1 ) begin
+		if (transmition_Finished == 1'b1) 
+        begin
+            if(BCH_coding == 1'b1 and BCH_encoded == 1'b0)
+            begin
+                state <= BCH;
+            end
+            else if(generateNoise == 1'b1)
+            begin
+                state <= GENERATE_NOISE;
+            end
+            else if(randomGenerateErrors == 1'b1)
+            begin
+                state <= GENERATE_ERRORS;
+            end
+            else if(BCH_coding == 1'b1 and BCH_encoded == 1'b0)
+            begin
+                state <= DECODING_BCH;
+            end
+            else
+            begin
+                state <= FINISHED;
+            end                
+	    end
+        else
+        begin
+            state <= IDLE;
+        end
+	end
+end
+
+
 
 //------------------------------------------
 //------------- Registers ------------------
