@@ -1,0 +1,37 @@
+addrmap registers {
+    name = "Test Registers";
+    desc = "Register description of example";
+
+    default regwidth = 32;
+    default sw = rw;
+    default hw = r;
+
+    reg {
+        name = "SYSTEM ID";
+
+        field {
+            sw   = r;
+            hw   = na;
+            desc = "The two least signicant bytes";
+        } FIRST[15:0] = 0x1234;
+
+        field {
+            sw   = r;
+            hw   = na;
+            desc = "The two most signicant bytes";
+        } SECOND[31:16] = 0xABCD;
+    } SYSTEM_ID @ 0x0;
+
+    reg {
+        name = "LEDS";
+
+        field {
+            hw   = r;
+            sw   = rw;
+            fieldwidth = 8;
+            desc = "These bits enable LEDs";
+        } LED[7:0] = 0;
+
+    } LEDS @ 0x4;
+
+};

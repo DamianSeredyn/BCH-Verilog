@@ -1,0 +1,1 @@
+exec quartus_cpf -o bitstream_compression=on -c output_files/soc_system.sof output_files/soc_system.rbf
