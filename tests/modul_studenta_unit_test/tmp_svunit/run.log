@@ -1,0 +1,114 @@
+# vsim -suppress 12003,8386 -voptargs="+acc" -sv_seed random -do "../modul_studenta_unit_test.do" -do "run -all; quit" -c -lib work -l run.log testrunner 
+# Start time: 20:43:52 on Apr 25,2025
+# ** Note: (vsim-3812) Design is being optimized...
+# //  Questa Intel Starter FPGA Edition-64
+# //  Version 2021.2 linux_x86_64 Apr 14 2021
+# //
+# //  Copyright 1991-2021 Mentor Graphics Corporation
+# //  All Rights Reserved.
+# //
+# //  QuestaSim and its associated documentation contain trade
+# //  secrets and commercial or financial information that are the property of
+# //  Mentor Graphics Corporation and are privileged, confidential,
+# //  and exempt from disclosure under the Freedom of Information Act,
+# //  5 U.S.C. Section 552. Furthermore, this information
+# //  is prohibited from disclosure under the Trade Secrets Act,
+# //  18 U.S.C. Section 1905.
+# //
+# Loading sv_std.std
+# Loading work.junit_xml(fast)
+# Loading work.svunit_pkg(fast)
+# Loading work.testrunner(fast)
+# Loading work.__testsuite(fast)
+# Loading work.registers_pkg(fast)
+# Loading work.axi4_lite_if(fast)
+# Loading work.axi4_lite_pkg(fast)
+# Loading work.unit_test_pkg(fast)
+# Loading work.modul_studenta_unit_test(fast)
+# Loading work.axi4_lite_if(fast__2)
+# Loading work.modul_studenta(fast)
+# Loading work.registers(fast)
+# Sv_Seed = 2669498534
+# do ../modul_studenta_unit_test.do
+# 
+# add wave -position insertpoint  \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/rst \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/clk \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_awready \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_awvalid \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_awaddr \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_awprot \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_wready \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_wvalid \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_wdata \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_wstrb \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_bready \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_bvalid \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_bresp \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_arready \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_arvalid \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_araddr \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_arprot \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_rready \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_rvalid \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_rdata \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/s_axil_rresp \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/LED \
+# sim:/testrunner/__ts/modul_studenta_ut/dut/hwif_out
+# 
+# view structure
+# view signals
+# 
+# TreeUpdate [SetDefaultTree]
+# quietly wave cursor active 1
+# wave activecursor not supported in batch mode
+# configure wave -namecolwidth 150
+# configure wave not supported in batch mode
+# configure wave -valuecolwidth 80
+# configure wave not supported in batch mode
+# configure wave -justifyvalue left
+# configure wave not supported in batch mode
+# configure wave -signalnamewidth 1
+# configure wave not supported in batch mode
+# configure wave -snapdistance 10
+# configure wave not supported in batch mode
+# configure wave -datasetprefix 0
+# configure wave not supported in batch mode
+# configure wave -rowmargin 4
+# configure wave not supported in batch mode
+# configure wave -childrowmargin 2
+# configure wave not supported in batch mode
+# configure wave -gridoffset 0
+# configure wave not supported in batch mode
+# configure wave -gridperiod 1
+# configure wave not supported in batch mode
+# configure wave -griddelta 40
+# configure wave not supported in batch mode
+# configure wave -timeline 0
+# configure wave not supported in batch mode
+# configure wave -timelineunits ps
+# configure wave not supported in batch mode
+# update
+# 
+# log -r /*
+# run -all
+# INFO:  [0][__ts]: Registering Unit Test Case modul_studenta_unit_test
+# INFO:  [0][testrunner]: Registering Test Suite __ts
+# INFO:  [0][__ts]: RUNNING
+# INFO:  [0][modul_studenta_unit_test]: RUNNING
+# INFO:  [0][modul_studenta_unit_test]: simple_write::RUNNING
+# LED[0] = x
+# ERROR: [215][modul_studenta_unit_test]: fail_unless_equal: (dut.LED[0]) !== (1'b1) (at /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv line:188)
+# INFO:  [215][modul_studenta_unit_test]: simple_write::FAILED
+# INFO:  [215][modul_studenta_unit_test]: simple_read::RUNNING
+# Captured ID = 0xabcd1234
+# INFO:  [1375][modul_studenta_unit_test]: simple_read::PASSED
+# INFO:  [1375][modul_studenta_unit_test]: FAILED (1 of 2 tests passing)
+# 
+# INFO:  [1375][__ts]: FAILED (0 of 1 testcases passing)
+# 
+# INFO:  [1375][testrunner]: FAILED (0 of 1 suites passing) [SVUnit 3.38.0]
+# ** Note: $finish    : .testrunner.sv(40)
+#    Time: 1375 ns  Iteration: 3  Instance: /testrunner
+# End time: 20:43:53 on Apr 25,2025, Elapsed time: 0:00:01
+# Errors: 0, Warnings: 0

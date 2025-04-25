@@ -1,0 +1,10 @@
+<testsuites>
+  <testsuite name="__ts">
+    <testcase classname="modul_studenta_unit_test" name="simple_write">
+      <failure message="fail_unless_equal: (dut.LED[0]) !== (1'b1) (at /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv line:188)" type="failure">
+      </failure>
+    </testcase>
+    <testcase classname="modul_studenta_unit_test" name="simple_read">
+    </testcase>
+  </testsuite>
+</testsuites>

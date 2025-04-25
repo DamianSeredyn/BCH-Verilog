@@ -63,9 +63,9 @@ begin
     else if(clk == 1'b1 ) begin
 		if (transmition_Finished == 1'b1) 
         begin
-            if(BCH_coding == 1'b1 and BCH_encoded == 1'b0)
+            if(BCH_coding == 1'b1 && BCH_encoded == 1'b0)
             begin
-                state <= BCH;
+                state <= ENCODING_BCH;
             end
             else if(generateNoise == 1'b1)
             begin
@@ -75,7 +75,7 @@ begin
             begin
                 state <= GENERATE_ERRORS;
             end
-            else if(BCH_coding == 1'b1 and BCH_encoded == 1'b0)
+            else if(BCH_coding == 1'b1 && BCH_encoded == 1'b0)
             begin
                 state <= DECODING_BCH;
             end

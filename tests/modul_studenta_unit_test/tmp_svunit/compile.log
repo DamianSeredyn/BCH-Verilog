@@ -1,0 +1,24 @@
+Questa Intel Starter FPGA Edition-64 vlog 2021.2 Compiler 2021.04 Apr 14 2021
+Start time: 20:43:51 on Apr 25,2025
+vlog -l compile.log -f .svunit.f 
+-- Compiling package junit_xml
+-- Compiling package svunit_pkg
+-- Importing package junit_xml
+-- Compiling package registers_pkg
+-- Compiling module registers
+-- Importing package registers_pkg
+-- Compiling package axi4_lite_pkg
+-- Compiling interface axi4_lite_if
+-- Importing package axi4_lite_pkg
+-- Compiling package unit_test_pkg
+-- Compiling module modul_studenta
+-- Compiling module modul_studenta_unit_test
+-- Importing package svunit_pkg
+-- Importing package unit_test_pkg
+-- Compiling module __testsuite
+-- Compiling module testrunner
+
+Top level modules:
+	testrunner
+End time: 20:43:51 on Apr 25,2025, Elapsed time: 0:00:00
+Errors: 0, Warnings: 0
