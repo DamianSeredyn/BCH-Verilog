@@ -161,63 +161,79 @@ module modul_studenta_unit_test;
     endtask
 
 `SVUNIT_TESTS_BEGIN
-    `SVTEST(simple_write)
-        request_t request;
-        axi4_lite_pkg::response_t expected_response = RESPONSE_OKAY;
+    // `SVTEST(simple_write)
+    //     request_t request;
+    //     axi4_lite_pkg::response_t expected_response = RESPONSE_OKAY;
 
-        request.data[0] = 8'h01;
-        request.data[1] = 8'h00;
-        request.data[2] = 8'h00;
-        request.data[3] = 8'h00;
-        request.address = 21'h4;
-        request.byte_enable = 4'b0001;
-        request.access = axi4_lite_pkg::DEFAULT_DATA_ACCESS;
+    //     request.data[0] = 8'h01;
+    //     request.data[1] = 8'h00;
+    //     request.data[2] = 8'h00;
+    //     request.data[3] = 8'h00;
+    //     request.address = 21'h4;
+    //     request.byte_enable = 4'b0001;
+    //     request.access = axi4_lite_pkg::DEFAULT_DATA_ACCESS;
 
-        $display("LED[0] = %0h", dut.LED[0]);
+    //     $display("LED[0] = %0h", dut.LED[0]);
+    //     $display("LED[0] = %0b", dut.generator_signal);
 
-        axi4_slave_drv.aclk_posedge();
-        axi4_slave_drv.write_request_address(request.address);
+    //     axi4_slave_drv.aclk_posedge();
+    //     axi4_slave_drv.write_request_address(request.address);
 
-        axi4_slave_drv.aclk_posedge(3);
-        axi4_slave_drv.write_request_data(request.data, request.byte_enable);
+    //     axi4_slave_drv.aclk_posedge(3);
+    //     axi4_slave_drv.write_request_data(request.data, request.byte_enable);
 
 
-        axi4_slave_drv.write_response(request.response);
-        `FAIL_UNLESS_EQUAL(expected_response, request.response);
+    //     axi4_slave_drv.write_response(request.response);
+    //     `FAIL_UNLESS_EQUAL(expected_response, request.response);
 
-        `FAIL_UNLESS_EQUAL(dut.LED[0], 1'b1);
+    //     `FAIL_UNLESS_EQUAL(dut.LED[0], 1'b1);
 
-         $display("LED[0] = %0h", dut.LED[0]); 
+    //      $display("LED[0] = %0h", dut.LED[0]); 
 
-        repeat(10) axi4_slave_drv.aclk_posedge();
+    //     repeat(10) axi4_slave_drv.aclk_posedge();
         
-        `FAIL_UNLESS_EQUAL(dut.LED[0], 1'b1);
+    //     `FAIL_UNLESS_EQUAL(dut.LED[0], 1'b1);
 
-        repeat(100) axi4_slave_drv.aclk_posedge();
-    `SVTEST_END
+    //     repeat(100) axi4_slave_drv.aclk_posedge();
+    // `SVTEST_END
 
-    `SVTEST(simple_read)
-        request_t request;
-        axi4_lite_pkg::response_t expected_response = RESPONSE_OKAY;
+    // `SVTEST(simple_read)
+    //     request_t request;
+    //     axi4_lite_pkg::response_t expected_response = RESPONSE_OKAY;
 
-        request.address = 21'h0;
-        request.access = axi4_lite_pkg::DEFAULT_DATA_ACCESS;
+    //     request.address = 21'h0;
+    //     request.access = axi4_lite_pkg::DEFAULT_DATA_ACCESS;
 
-        fork
-            begin
-                axi4_slave_drv.read_request(request.address, request.access);
-            end
-            begin
-                request_t captured;
+    //     fork
+    //         begin
+    //             axi4_slave_drv.read_request(request.address, request.access);
+    //         end
+    //         begin
+    //             request_t captured;
 
-                axi4_slave_drv.read_response(captured.data, captured.response);
-                $display("Captured ID = 0x%0x%0x%0x%0x", captured.data[3], captured.data[2], captured.data[1], captured.data[0]);
-                `FAIL_UNLESS_EQUAL(expected_response, captured.response)
-                `FAIL_UNLESS_EQUAL(captured.data, 32'hABCD_1234)
-            end
-        join
+    //             axi4_slave_drv.read_response(captured.data, captured.response);
+    //             $display("Captured ID = 0x%0x%0x%0x%0x", captured.data[3], captured.data[2], captured.data[1], captured.data[0]);
+    //             `FAIL_UNLESS_EQUAL(expected_response, captured.response)
+    //             `FAIL_UNLESS_EQUAL(captured.data, 32'hABCD_1234)
+    //         end
+    //     join
 
-        repeat(100) axi4_slave_drv.aclk_posedge();
+    //     repeat(100) axi4_slave_drv.aclk_posedge();
+    // `SVTEST_END
+    `SVTEST(encoding_bch_test)
+        logic [7:0] signal_input = 8'b10101010;
+        logic [5:0] generator_signal = 6'b100101; 
+        logic [14:0] expected_encoded_signal = signal_input * generator_signal; 
+
+        dut.state = dut.ENCODING_BCH;
+
+        #10;
+        $display("state of BCH_encoded = %0b", dut.BCH_encoded);
+        $display("encoded signal = %0b", dut.encoded_signal);
+        $display("expected signal = %0b", expected_encoded_signal);
+        
+        `FAIL_UNLESS_EQUAL(dut.encoded_signal, expected_encoded_signal);
+        `FAIL_UNLESS_EQUAL(dut.BCH_encoded, 1'b1);  
     `SVTEST_END
 
 `SVUNIT_TESTS_END

@@ -34,6 +34,9 @@ logic BCH_coding = 1'b0;
 logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
+logic [7:0] signal_input = 8'b1010_1010; //temp value for testing
+logic [5:0] generator_signal = 6'b100101; //generator for encoding bch
+logic [13:0] encoded_signal =14'b0;
 
 // transmition signals
 logic transmition_Finished = 1'b0;
@@ -48,7 +51,7 @@ typedef enum logic[2:0]{
 	GENERATE_NOISE = 3'h2,
 	GENERATE_ERRORS = 3'h3,
 	DECODING_BCH = 3'h4,
-    FINISHED = 3'h5
+    FINISHED = 3'h5 
 } appState;
 
 appState state;
@@ -90,6 +93,25 @@ begin
         end
 	end
 end
+
+always_comb
+begin
+    if (state == ENCODING_BCH && BCH_encoded == 1'b0)
+    begin
+        encoded_signal = encode_bch(signal_input, generator_signal);
+        BCH_encoded = 1'b1;
+    end
+
+end
+
+
+function [13:0] encode_bch;
+    input [7:0] px;
+    input [5:0] gx;
+    begin
+        encode_bch = px * gx;
+    end
+endfunction
 
 
 
