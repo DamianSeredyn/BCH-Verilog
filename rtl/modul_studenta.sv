@@ -41,9 +41,15 @@ logic [13:0] encoded_signal =14'b0;
 // transmition signals
 logic transmition_Finished = 1'b0;
 
-// flags
+// flags begin
 logic BCH_encoded = 1'b0;
 logic BCH_decoded = 1'b0;
+
+// flags ending
+logic BCH_encoded_finished = 1'b0;
+logic BCH_startNoise_finished = 1'b0;
+logic BCH_startErrorGen_finished = 1'b0;
+logic BCH_decoded_finished = 1'b0;
 
 typedef enum logic[2:0]{
 	IDLE = 3'h0,
@@ -66,19 +72,19 @@ begin
     else if(clk == 1'b1 ) begin
 		if (transmition_Finished == 1'b1) 
         begin
-            if(BCH_coding == 1'b1 && BCH_encoded == 1'b0)
+            if(BCH_coding == 1'b1 && BCH_encoded_finished == 1'b0)
             begin
                 state <= ENCODING_BCH;
             end
-            else if(generateNoise == 1'b1)
+            else if(generateNoise == 1'b1 && BCH_startNoise_finished == 1'b0 && BCH_encoded_finished == 1'b1)
             begin
                 state <= GENERATE_NOISE;
             end
-            else if(randomGenerateErrors == 1'b1)
+            else if(randomGenerateErrors == 1'b1 &&  && BCH_startErrorGen_finished == 1'b0 )
             begin
                 state <= GENERATE_ERRORS;
             end
-            else if(BCH_coding == 1'b1 && BCH_encoded == 1'b0)
+            else if(BCH_coding == 1'b1 && BCH_decoded_finished == 1'b0)
             begin
                 state <= DECODING_BCH;
             end
@@ -96,12 +102,60 @@ end
 
 always_comb
 begin
-    if (state == ENCODING_BCH && BCH_encoded == 1'b0)
+    if (state == ENCODING_BCH && BCH_encoded_finished == 1'b0)
     begin
         encoded_signal = encode_bch(signal_input, generator_signal);
         BCH_encoded = 1'b1;
     end
 
+end
+
+always_ff @(posedge clk or posedge rst)
+begin
+    if(rst == 1'b1)
+        begin
+
+        end
+    else
+        begin
+            if(state == GENERATE_NOISE && BCH_startNoise_finished == 1'b0)
+            begin
+                BCH_startNoise_finished <= 1'b1;
+
+            end
+        end
+end
+
+always_ff @(posedge clk or posedge rst)
+begin
+    if(rst == 1'b1)
+        begin
+
+        end
+    else
+        begin
+            if(state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0)
+            begin
+                BCH_startErrorGen_finished <= 1'b1;
+
+            end
+        end
+end
+
+always_ff @(posedge clk or posedge rst)
+begin
+    if(rst == 1'b1)
+        begin
+
+        end
+    else
+        begin
+            if(state == GENERATE_ERRORS && BCH_decoded_finished == 1'b0)
+            begin
+                BCH_decoded_finished <= 1'b1;
+
+            end
+        end
 end
 
 
