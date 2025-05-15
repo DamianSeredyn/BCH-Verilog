@@ -253,6 +253,7 @@ endfunction
        
         dut.state = dut.ENCODING_BCH;
 
+
         while (dut.BCH_encoded_finished !== 1'b1) 
         begin
             @(posedge clk_100mhz);
@@ -267,7 +268,6 @@ endfunction
         $display("state of BCH_encoded = %0b", dut.BCH_encoded_finished);
         $display("encoded signal = %0b", dut.encoded_signal);
         $display("expected signal = %0b", expected_encoded_signal);
-        
         `FAIL_UNLESS_EQUAL(dut.encoded_signal, expected_encoded_signal);
         `FAIL_UNLESS_EQUAL(dut.BCH_encoded_finished, 1'b1);  
 
@@ -307,6 +307,37 @@ endfunction
 
     `SVTEST_END
 
+
+    `SVTEST(syndrome_coding_bch_test)
+        logic [104:0] signal_input = 104'b1110101101011;
+        int wait_cycles = 0;
+
+        dut.syndrome_coding = signal_input;
+
+        dut.state = dut.DECODING_BCH;
+
+        while (dut.BCH_encoded_finished !== 1'b1) 
+        begin
+            @(posedge clk_100mhz);
+            wait_cycles++;
+            if (wait_cycles > 1000) begin
+                $display("Timeout waiting for BCH_encoded_finished");
+                `FAIL_UNLESS(0)
+            break;
+            end
+        end
+        $display("state of BCH_decoded = %0b", dut.BCH_decoded_finished);
+        $display("Input signal = %0b", dut.syndrome_coding);
+        $display("syndrome decoding result = %0b", dut.decoded_syndrome[0], "  %0b",dut.decoded_syndrome[1],
+        "  %0b",dut.decoded_syndrome[2],"  %0b",dut.decoded_syndrome[3],"  %0b",dut.decoded_syndrome[4],
+        "  %0b",dut.decoded_syndrome[5],"  %0b",dut.decoded_syndrome[6],"  %0b",dut.decoded_syndrome[7]);
+        `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[0], 2'b10);
+        `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
+        `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);
+        `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[3], 5'b10000);
+        `FAIL_UNLESS_EQUAL(dut.BCH_decoded_finished, 1'b1);  
+        
+    `SVTEST_END
 
 `SVUNIT_TESTS_END
 
