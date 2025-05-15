@@ -37,7 +37,9 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [7:0] signal_input = 8'b1010_1010; //temp value for testing
 logic [5:0] generator_signal = 6'b100101; //generator for encoding bch
 logic [13:0] encoded_signal =14'b0;
-
+logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable used to pass data. Keep the length!
+logic [20:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
+logic [4:0] correcting_capability = 2; //Number of errors that decoding can correct. MAX = 4
 // transmition signals
 logic transmition_Finished = 1'b0;
 
@@ -78,7 +80,7 @@ begin
             begin
                 state <= GENERATE_ERRORS;
             end
-            else if(BCH_coding == 1'b1 && BCH_encoded == 1'b0)
+            else if(BCH_coding == 1'b1 && BCH_decoded == 1'b0)
             begin
                 state <= DECODING_BCH;
             end
@@ -94,16 +96,110 @@ begin
 	end
 end
 
-always_comb
+always_ff @(posedge clk or posedge rst)
 begin
     if (state == ENCODING_BCH && BCH_encoded == 1'b0)
     begin
         encoded_signal = encode_bch(signal_input, generator_signal);
         BCH_encoded = 1'b1;
     end
-
+    if (state == DECODING_BCH && BCH_decoded == 1'b0)
+    begin
+        decode_syndromes(correcting_capability*2,syndrome_coding); // syndrome numbering starts from 1;
+        BCH_decoded = 1'b1;
+    end
 end
 
+task decode_syndromes;
+    input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
+    input [104:0] data;
+    logic [3:0] loop;
+    logic [104:0] input_data;
+    begin
+        input_data = 104'b0;
+        for ( loop = 1; loop <= syndrome_number; loop++)
+        begin
+            for (integer i = 0; i < 104; i++)
+            begin
+                if (data[i])
+                input_data[i*loop] = 1'b1;
+            end
+            syndromes(input_data, decoded_syndrome[loop-1]);
+            input_data = 104'b0;
+        end
+    end
+endtask
+
+task syndromes;
+    logic [9:0] i;
+    logic [4:0] j;
+    logic [104:0] data;
+    logic [15:0] data_2;
+    input [104:0] data_i;
+    output[104:0] data_oo;
+    begin
+        data = data_i;
+        data_2 = 104'b0;
+        for (j = 0; j < 8; j++)
+        begin
+            for (i = 16; i < 104; i++)
+            begin
+                if (data[i])
+                begin
+                    data[i] = 1'b0;
+                    data[i % 15] = 1'b1 ^ data[i % 15];
+                end
+            end
+        end
+        if (data[0])
+            data_2 = data_2 ^ 104'b01;
+        if (data[1])
+            data_2 = data_2 ^ 104'b10;
+        if (data[2])
+            data_2 = data_2 ^ 104'b100;
+        if (data[3])
+            data_2 = data_2 ^ 104'b1000;
+        if (data[4])
+            data_2 = data_2 ^ 104'b11;
+        if(data[5])
+            data_2 = data_2 ^ 104'b110;
+        if(data[6])
+            data_2 = data_2 ^ 104'b1100;
+        if(data[7])
+            data_2 = data_2 ^ 104'b1011; 
+        if(data[8])
+            data_2 = data_2 ^ 104'b101;
+        if(data[9])
+            data_2 = data_2 ^ 104'b1010;
+        if(data[10])
+            data_2 = data_2 ^ 104'b111;
+        if(data[11])
+            data_2 = data_2 ^ 104'b1110;
+        if(data[12])
+            data_2 = data_2 ^ 104'b1111;
+        if(data[13])
+            data_2 = data_2 ^ 104'b1101;
+        if(data[14])
+            data_2 = data_2 ^ 104'b1001;
+        if(data[15])
+            data_2 = data_2 ^ 104'b01;
+        case (data_2)
+            15'b0011:  data_2 = 15'b10000;
+            15'b0110:  data_2 = 15'b100000;
+            15'b1100:  data_2 = 15'b1000000;
+            15'b1011:  data_2 = 15'b10000000;
+            15'b0101:  data_2 = 15'b100000000;
+            15'b1010:  data_2 = 15'b1000000000;
+            15'b0111:  data_2 = 15'b10000000000;
+            15'b1110:  data_2 = 15'b100000000000;
+            15'b1111:  data_2 = 15'b1000000000000;
+            15'b1101:  data_2 = 15'b10000000000000;
+            15'b1001:  data_2 = 15'b100000000000000;
+            default: data_2 = data_2;
+        endcase
+        data_oo = data_2;
+    end
+endtask
 
 function [13:0] encode_bch;
     input [7:0] px;
