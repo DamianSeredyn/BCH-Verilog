@@ -1,6 +1,6 @@
 # vsim -suppress 12003,8386 -voptargs="+acc" -sv_seed random -do "../modul_studenta_unit_test.do" -do "run -all; quit" -c -lib work -l run.log testrunner 
-# Start time: 21:10:36 on May 14,2025
-# ** Note: (vsim-3813) Design is being optimized due to module recompilation...
+# Start time: 22:29:26 on May 15,2025
+# ** Note: (vsim-8009) Loading existing optimized design _opt
 # //  Questa Intel Starter FPGA Edition-64
 # //  Version 2021.2 linux_x86_64 Apr 14 2021
 # //
@@ -28,7 +28,7 @@
 # Loading work.axi4_lite_if(fast__2)
 # Loading work.modul_studenta(fast)
 # Loading work.registers(fast)
-# Sv_Seed = 911153953
+# Sv_Seed = 1062869866
 # do ../modul_studenta_unit_test.do
 # 
 # add wave -position insertpoint  \
@@ -118,5 +118,5 @@
 # INFO:  [20295][testrunner]: PASSED (1 of 1 suites passing) [SVUnit 3.38.0]
 # ** Note: $finish    : .testrunner.sv(40)
 #    Time: 20295 ns  Iteration: 2  Instance: /testrunner
-# End time: 21:10:37 on May 14,2025, Elapsed time: 0:00:01
+# End time: 22:29:26 on May 15,2025, Elapsed time: 0:00:00
 # Errors: 0, Warnings: 0
