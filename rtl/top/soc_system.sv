@@ -5,6 +5,7 @@ module soc_system (
 
       input       [1:0]  KEY,
       output      [7:0]  LED,
+      input              DEBUGTESTSYSTEM,
 
       inout              HPS_CONV_USB_N,
       output      [14:0] HPS_DDR3_ADDR,
@@ -300,7 +301,7 @@ modul_studenta modul_studenta_u (
     .s_axil_rvalid   ( s_axil_rvalid  ),
     .s_axil_rdata    ( s_axil_rdata   ),
     .s_axil_rresp    ( s_axil_rresp   ),
-
+    .DebugTestSystem ( DEBUGTESTSYSTEM),
     .LED             ( LED            )
 );
 

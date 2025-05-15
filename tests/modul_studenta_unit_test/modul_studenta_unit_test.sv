@@ -60,6 +60,7 @@ module modul_studenta_unit_test;
     // ----------------------------------
     
     logic [ 7:0] LED;
+    logic DEBUGTESTSYSTEM;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -133,9 +134,31 @@ module modul_studenta_unit_test;
         .s_axil_rvalid   ( s_axil_rvalid  ),
         .s_axil_rdata    ( s_axil_rdata   ),
         .s_axil_rresp    ( s_axil_rresp   ),
-    
+
+        .DebugTestSystem ( DEBUGTESTSYSTEM),
         .LED             ( LED            )
     );
+
+    typedef enum logic[2:0]{
+	IDLE = 3'h0,
+	ENCODING_BCH = 3'h1,
+	GENERATE_NOISE = 3'h2,
+	GENERATE_ERRORS = 3'h3,
+	DECODING_BCH = 3'h4,
+    FINISHED = 3'h5 
+} appState;
+
+function string appStateToString(appState s);
+    case (s)
+        IDLE:            return "IDLE";
+        ENCODING_BCH:    return "ENCODING_BCH";
+        GENERATE_NOISE:  return "GENERATE_NOISE";
+        GENERATE_ERRORS: return "GENERATE_ERRORS";
+        DECODING_BCH:    return "DECODING_BCH";
+        FINISHED:        return "FINISHED";
+        default:         return "UNKNOWN";
+    endcase
+endfunction
 
     function void build();
         svunit_ut = new(name);
@@ -220,29 +243,90 @@ module modul_studenta_unit_test;
 
     //     repeat(100) axi4_slave_drv.aclk_posedge();
     // `SVTEST_END
+
+    
     `SVTEST(encoding_bch_test)
         logic [7:0] signal_input = 8'b10101010;
         logic [5:0] generator_signal = 6'b100101; 
         logic [14:0] expected_encoded_signal = signal_input * generator_signal; 
-
+        int wait_cycles = 0;
+       
         dut.state = dut.ENCODING_BCH;
 
-        #100000;
-        $display("state of BCH_encoded = %0b", dut.BCH_encoded);
+
+        while (dut.BCH_encoded_finished !== 1'b1) 
+        begin
+            @(posedge clk_100mhz);
+            wait_cycles++;
+            if (wait_cycles > 1000) begin
+                $display("Timeout waiting for BCH_encoded_finished");
+                `FAIL_UNLESS(0)
+            break;
+            end
+        end
+        
+        $display("state of BCH_encoded = %0b", dut.BCH_encoded_finished);
         $display("encoded signal = %0b", dut.encoded_signal);
         $display("expected signal = %0b", expected_encoded_signal);
         `FAIL_UNLESS_EQUAL(dut.encoded_signal, expected_encoded_signal);
-        `FAIL_UNLESS_EQUAL(dut.BCH_encoded, 1'b1);  
+        `FAIL_UNLESS_EQUAL(dut.BCH_encoded_finished, 1'b1);  
+
+
+        reset_n = ~ reset_n;
+        #5 reset_n = ~ reset_n;
+        
     `SVTEST_END
+    
+
+    `SVTEST(process_test)
+
+
+    appState prev_state;
+    int transition_count = 0;
+
+
+    $display("==============================");
+    $display("     INIT PROCESS TEST        ");
+    $display("==============================");
+
+    dut.state = dut.IDLE;
+    DEBUGTESTSYSTEM = 1'b1;
+    prev_state = dut.state;
+
+    for (int i = 0; i < 2000; i++) begin
+        @(posedge clk_100mhz);
+        if (dut.state !== prev_state) begin
+            transition_count++;
+            $display("State transition %0d: %0s -> %0s [TIME = %0d]", transition_count,
+                appStateToString(prev_state), appStateToString(dut.state),i);
+            prev_state = dut.state;
+        end
+    end
+
+    $display("Total number of state transitions: %0d", transition_count);
+
+    `SVTEST_END
+
 
     `SVTEST(syndrome_coding_bch_test)
         logic [104:0] signal_input = 104'b1110101101011;
+        int wait_cycles = 0;
+
         dut.syndrome_coding = signal_input;
 
         dut.state = dut.DECODING_BCH;
 
-        #100000;
-        $display("state of BCH_decoded = %0b", dut.BCH_decoded);
+        while (dut.BCH_encoded_finished !== 1'b1) 
+        begin
+            @(posedge clk_100mhz);
+            wait_cycles++;
+            if (wait_cycles > 1000) begin
+                $display("Timeout waiting for BCH_encoded_finished");
+                `FAIL_UNLESS(0)
+            break;
+            end
+        end
+        $display("state of BCH_decoded = %0b", dut.BCH_decoded_finished);
         $display("Input signal = %0b", dut.syndrome_coding);
         $display("syndrome decoding result = %0b", dut.decoded_syndrome[0], "  %0b",dut.decoded_syndrome[1],
         "  %0b",dut.decoded_syndrome[2],"  %0b",dut.decoded_syndrome[3],"  %0b",dut.decoded_syndrome[4],
@@ -251,7 +335,7 @@ module modul_studenta_unit_test;
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[3], 5'b10000);
-        `FAIL_UNLESS_EQUAL(dut.BCH_decoded, 1'b1);  
+        `FAIL_UNLESS_EQUAL(dut.BCH_decoded_finished, 1'b1);  
         
     `SVTEST_END
 
