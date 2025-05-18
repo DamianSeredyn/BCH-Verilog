@@ -38,7 +38,7 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [7:0] signal_input = 8'b1010_1010; //temp value for testing
 logic [5:0] generator_signal = 6'b100101; //generator for encoding bch
 logic [13:0] encoded_signal =14'b0;
-logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable used to pass data. Keep the length!
+logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
 // transmition signals
@@ -225,7 +225,7 @@ begin
         second_matrix[i] = decoded_syndrome2[size+i];
     end
 
-    first_matrix_determinant(first_matrix,size,first_matrix_sum); // determinant calculation
+    first_matrix_determinant(first_matrix,size,first_matrix_sum); // determinant calculation. Jeżeli jest mniej niż założona liczba błędów to wyjdzie 0, i powinniśmy spróbować innego rozmiaru
     syndromes(first_matrix_sum,first_matrix_sum); // syndrome from determinant
     //powyżej tego momentu wszystko na pewno działa a poniżej działa dla 2 błędów a nie działa dla 3 i 4 chyba
     minor(first_matrix,size,first_matrix); // z tym chyba jest problem
