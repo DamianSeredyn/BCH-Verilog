@@ -39,8 +39,8 @@ logic [7:0] signal_input = 8'b1010_1010; //temp value for testing
 logic [5:0] generator_signal = 6'b100101; //generator for encoding bch
 logic [13:0] encoded_signal =14'b0;
 logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable used to pass data. Keep the length!
-logic [20:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
-logic [4:0] correcting_capability = 2; //Number of errors that decoding can correct. MAX = 4
+logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
+logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
 // transmition signals
 logic transmition_Finished = 1'b0;
 
@@ -185,11 +185,151 @@ begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
                 decode_syndromes(correcting_capability*2,syndrome_coding); // syndrome numbering starts from 1;
+                matrix(decoded_syndrome, correcting_capability);
                 BCH_decoded_finished <= 1'b1;
 
             end
         end
 end
+
+logic [104:0] test_variable1 [3:0][3:0];
+logic [104:0] test_variable2 [3:0];
+logic [104:0] test_variable3;
+
+task matrix;
+logic [104:0] decoded_syndrome2 [8:0];
+logic [104:0] first_matrix [3:0][3:0];
+logic [104:0] second_matrix [3:0];
+logic [104:0] second_matrix_sum [3:0];
+logic [104:0] first_matrix_sum;
+logic [104:0] first_matrix_trans [3:0][3:0];
+logic [4:0] i;
+logic [4:0] j;
+input [104:0] decoded_syndrome [8:0];
+input [4:0] size;
+begin
+    decoded_syndrome2 = decoded_syndrome;
+    first_matrix_sum = 105'b0;
+    second_matrix_sum[0] = 105'b0;
+    second_matrix_sum[1] = 105'b0;
+    second_matrix_sum[2] = 105'b0;
+    second_matrix_sum[3] = 105'b0;
+
+    //create matrix
+    for (i = 0; i < size ; i++ ) begin
+        for (j = 0; j < size ; j++ ) begin
+           first_matrix[i][j] = decoded_syndrome2[j+i]; 
+        end
+        second_matrix[i] = decoded_syndrome2[size+i];
+    end
+
+    first_matrix_determinant(first_matrix,size,first_matrix_sum); // determinant calculation
+    syndromes(first_matrix_sum,first_matrix_sum); // syndrome from determinant
+
+    for (i = 0; i < size ; i++ ) begin
+        for (j = 0; j < size ; j++ ) begin
+           first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum);
+        end
+    end
+    for (i = 0; i < size ; i++ ) begin
+        for (j = 0; j < size ; j++ ) begin
+           first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum);
+        end
+    end
+    for (i = 0; i < size ; i++ ) begin
+        for (j = 0; j < size ; j++ ) begin
+           second_matrix_sum[i] = second_matrix_sum[i] + second_matrix[i]*first_matrix[i][j];
+        end
+    end
+
+    test_variable1 = first_matrix;
+    test_variable2 = second_matrix_sum;
+    test_variable3 = first_matrix_sum;
+end
+endtask
+
+task minor;
+
+endtask
+
+task first_matrix_determinant;
+input [104:0] first_matrix [3:0][3:0];
+input [4:0] size;
+output [104:0] first_matrix_sum;
+logic [104:0] first_matrix_sum2;
+logic [4:0] start_row;
+logic [4:0] start_column;
+start_row = 5'b0;
+start_column = 5'b0;
+begin
+    first_matrix_sum2 = 105'b0;
+    if (size == 2) begin
+        first_matrix_sum2 = first_matrix[0][0] * first_matrix[1][1];
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[0][1] * first_matrix[1][0]);
+    end
+    else if(size == 3)begin
+        first_matrix_sum2 = Sarrus(first_matrix,0,0,0);
+    end
+    else if(size == 4)begin
+        first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,1);
+        first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,2);
+        first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,3);
+        first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,4);
+    end
+    first_matrix_sum = first_matrix_sum2;
+end
+endtask
+
+function [104:0] Sarrus;
+input [104:0] first_matrix [3:0][3:0];
+input [4:0] start_row;
+input [4:0] start_column;
+input [4:0] skip_column;
+logic [104:0] first_matrix_sum2;
+logic [2:0] add1;
+logic [2:0] add2;
+logic [2:0] add3;
+first_matrix_sum2 = 105'b0;
+begin
+    if (skip_column == 0) begin
+        add1 = 1;
+        add2 = 2;
+        add3 = 0;
+    end else if (skip_column == 1) begin
+        add1 = 2;
+        add2 = 3;
+        add3 = 1;
+    end else if (skip_column == 2) begin
+        add1 = 2;
+        add2 = 3;
+        add3 = 0;
+    end else if (skip_column == 3) begin
+        add1 = 1;
+        add2 = 3;
+        add3 = 0;
+    end else if (skip_column == 4) begin
+        add1 = 1;
+        add2 = 2;
+        add3 = 0;
+    end
+    if (skip_column == 0)begin
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add2]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add3]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add1]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add3]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add2]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add1]);
+    end else begin
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add2] * first_matrix[0][skip_column-1]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add3] * first_matrix[0][skip_column-1]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add1] * first_matrix[0][skip_column-1]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add3] * first_matrix[0][skip_column-1]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add2] * first_matrix[0][skip_column-1]);
+        first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add1] * first_matrix[0][skip_column-1]);
+    end
+    Sarrus = first_matrix_sum2;
+end
+endfunction
 
 task decode_syndromes;
     input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
@@ -197,16 +337,16 @@ task decode_syndromes;
     logic [3:0] loop;
     logic [104:0] input_data;
     begin
-        input_data = 104'b0;
+        input_data = 105'b0;
         for ( loop = 1; loop <= syndrome_number; loop++)
         begin
-            for (integer i = 0; i < 104; i++)
+            for (integer i = 0; i < 105; i++)
             begin
                 if (data[i])
                 input_data[i*loop] = 1'b1;
             end
             syndromes(input_data, decoded_syndrome[loop-1]);
-            input_data = 104'b0;
+            input_data = 105'b0;
         end
     end
 endtask
@@ -220,10 +360,10 @@ task syndromes;
     output[104:0] data_oo;
     begin
         data = data_i;
-        data_2 = 104'b0;
+        data_2 = 105'b0;
         for (j = 0; j < 8; j++)
         begin
-            for (i = 16; i < 104; i++)
+            for (i = 16; i < 105; i++)
             begin
                 if (data[i])
                 begin
@@ -233,37 +373,37 @@ task syndromes;
             end
         end
         if (data[0])
-            data_2 = data_2 ^ 104'b01;
+            data_2 = data_2 ^ 105'b01;
         if (data[1])
-            data_2 = data_2 ^ 104'b10;
+            data_2 = data_2 ^ 105'b10;
         if (data[2])
-            data_2 = data_2 ^ 104'b100;
+            data_2 = data_2 ^ 105'b100;
         if (data[3])
-            data_2 = data_2 ^ 104'b1000;
+            data_2 = data_2 ^ 105'b1000;
         if (data[4])
-            data_2 = data_2 ^ 104'b11;
+            data_2 = data_2 ^ 105'b11;
         if(data[5])
-            data_2 = data_2 ^ 104'b110;
+            data_2 = data_2 ^ 105'b110;
         if(data[6])
-            data_2 = data_2 ^ 104'b1100;
+            data_2 = data_2 ^ 105'b1100;
         if(data[7])
-            data_2 = data_2 ^ 104'b1011; 
+            data_2 = data_2 ^ 105'b1011; 
         if(data[8])
-            data_2 = data_2 ^ 104'b101;
+            data_2 = data_2 ^ 105'b101;
         if(data[9])
-            data_2 = data_2 ^ 104'b1010;
+            data_2 = data_2 ^ 105'b1010;
         if(data[10])
-            data_2 = data_2 ^ 104'b111;
+            data_2 = data_2 ^ 105'b111;
         if(data[11])
-            data_2 = data_2 ^ 104'b1110;
+            data_2 = data_2 ^ 105'b1110;
         if(data[12])
-            data_2 = data_2 ^ 104'b1111;
+            data_2 = data_2 ^ 105'b1111;
         if(data[13])
-            data_2 = data_2 ^ 104'b1101;
+            data_2 = data_2 ^ 105'b1101;
         if(data[14])
-            data_2 = data_2 ^ 104'b1001;
+            data_2 = data_2 ^ 105'b1001;
         if(data[15])
-            data_2 = data_2 ^ 104'b01;
+            data_2 = data_2 ^ 105'b01;
         case (data_2)
             15'b0011:  data_2 = 15'b10000;
             15'b0110:  data_2 = 15'b100000;

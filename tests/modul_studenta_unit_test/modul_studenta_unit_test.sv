@@ -331,6 +331,19 @@ endfunction
         $display("syndrome decoding result = %0b", dut.decoded_syndrome[0], "  %0b",dut.decoded_syndrome[1],
         "  %0b",dut.decoded_syndrome[2],"  %0b",dut.decoded_syndrome[3],"  %0b",dut.decoded_syndrome[4],
         "  %0b",dut.decoded_syndrome[5],"  %0b",dut.decoded_syndrome[6],"  %0b",dut.decoded_syndrome[7]);
+        $display("\n");
+        for (int i = 0; i < 4 ; i++ ) begin
+            $display("Row number = %0d", i);
+            for (int j = 0; j < 4 ;j++ ) begin
+                $display("Syndrome matrix 1 = %0b", dut.test_variable1[i][j]);
+            end
+        end
+        $display("\n");
+        for (int i = 0; i < 4 ; i++ ) begin
+            $display("Syndrome matrix2 = %0b", dut.test_variable2[i]);
+        end
+        $display("\n");
+        $display("second matrix sum = %0b", dut.test_variable3);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[0], 2'b10);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);
@@ -338,6 +351,7 @@ endfunction
         `FAIL_UNLESS_EQUAL(dut.BCH_decoded_finished, 1'b1);  
         
     `SVTEST_END
+    
 
 `SVUNIT_TESTS_END
 
