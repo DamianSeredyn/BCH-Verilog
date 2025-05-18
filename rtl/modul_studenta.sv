@@ -192,17 +192,19 @@ begin
         end
 end
 
+//zmienne do testów, później pewnie będzie można usunąć
 logic [104:0] test_variable1 [3:0][3:0];
 logic [104:0] test_variable2 [3:0];
 logic [104:0] test_variable3;
 
 task matrix;
 logic [104:0] decoded_syndrome2 [8:0];
-logic [104:0] first_matrix [3:0][3:0];
-logic [104:0] second_matrix [3:0];
+logic [104:0] first_matrix [3:0][3:0];// macierz z lewej strony równania
+logic [104:0] second_matrix [3:0];// macierz z prawej strony równania
 logic [104:0] second_matrix_sum [3:0];
 logic [104:0] first_matrix_sum;
 logic [104:0] first_matrix_trans [3:0][3:0];
+logic [104:0] where_errors [3:0];
 logic [4:0] i;
 logic [4:0] j;
 input [104:0] decoded_syndrome [8:0];
@@ -225,32 +227,125 @@ begin
 
     first_matrix_determinant(first_matrix,size,first_matrix_sum); // determinant calculation
     syndromes(first_matrix_sum,first_matrix_sum); // syndrome from determinant
+    //powyżej tego momentu wszystko na pewno działa a poniżej działa dla 2 błędów a nie działa dla 3 i 4 chyba
+    minor(first_matrix,size,first_matrix); // z tym chyba jest problem
 
     for (i = 0; i < size ; i++ ) begin
         for (j = 0; j < size ; j++ ) begin
-           first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum);
+            first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum);
+            second_matrix_sum[i] = second_matrix_sum[i] + second_matrix[j]*first_matrix[i][j];
         end
+        syndromes(second_matrix_sum[i],second_matrix_sum[i]);
     end
-    for (i = 0; i < size ; i++ ) begin
-        for (j = 0; j < size ; j++ ) begin
-           first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum);
-        end
-    end
-    for (i = 0; i < size ; i++ ) begin
-        for (j = 0; j < size ; j++ ) begin
-           second_matrix_sum[i] = second_matrix_sum[i] + second_matrix[i]*first_matrix[i][j];
-        end
-    end
+
+    error_place(second_matrix_sum,size,where_errors);
 
     test_variable1 = first_matrix;
-    test_variable2 = second_matrix_sum;
+    test_variable2 = where_errors;
     test_variable3 = first_matrix_sum;
 end
 endtask
 
-task minor;
-
+task error_place;
+input [104:0] second_matrix_sum [3:0];
+input [4:0] size;
+output [104:0] where_errors [3:0];
+logic [104:0] second_matrix_sum2 [3:0];
+logic [104:0] possible_values [15:0];
+logic [104:0] value_holder;
+logic [5:0] i;
+logic [5:0] j;
+i = 0;
+begin
+    second_matrix_sum2 = second_matrix_sum;
+    for (i = 6'b0; i < 16; i++)
+    begin
+        if (i == 0) possible_values[i] = 16'b10;
+        else
+        possible_values[i] = 16'b10 << i;
+    end
+    for (j = 0; j < 16; j++)
+    begin
+        for (i = 0; i < 16; i++)
+        begin
+            if ((possible_values[i] * possible_values[j]) == second_matrix_sum2[0]) begin
+                syndromes((possible_values[i] ^ possible_values[j]),value_holder);
+                if (value_holder == second_matrix_sum2[1]) begin
+                    where_errors[0] = possible_values[i];
+                    where_errors[1] = possible_values[j];
+                    break;
+                end
+                //where_errors[0] = possible_values[i];
+                //where_errors[1] = possible_values[j];
+            end
+        end
+    end
+end
 endtask
+
+task minor; // Nie pamiętam jak to się nazywa ale chodzi o to, jak chcemy wiedzieć co jest w danym miejscu w macierzy...
+// to wykreślamy wiersz i kolumnę w której znajduje się nasza zmienna i liczymy resztę metodą sarrusa.
+// Ta funckja sarrus co napisałem to w sumie podziała tylko do liczenia macierzy 3x3 i determinanty 4x4, do tego raczej coś nowego by trzeba było napisać
+// Albo może o coś innego chodzi? idk nie mam siły, chodzi o adj(M), które widać w 9:23 w filmiki przypietym na dc
+input [104:0] first_matrix [3:0][3:0];
+input [4:0] size;
+output [104:0] first_matrix_out [3:0][3:0];
+logic [104:0] first_matrix2[3:0][3:0];
+logic [4:0] i;
+logic [4:0] j;
+i = 5'b0;
+j = 5'b0;
+begin
+    for (i = 0; i < size ; i++ ) begin
+        for (j = 0; j < size ; j++ ) begin
+            first_matrix2[i][j] = 105'b0;
+        end
+    end
+
+    if (size == 2) begin
+        first_matrix2[0][0] = first_matrix[1][1];
+        first_matrix2[1][1] = first_matrix[0][0];
+        first_matrix2[0][1] = first_matrix[1][0];
+        first_matrix2[1][0] = first_matrix[0][1]; 
+    // dla 3 i 4 nie mialem sily i to zbruteforcowałem i może nie działać
+    end else if (size == 3) begin
+        for (i = 0; i < size ; i++ ) begin
+            for (j = 0; j < size ; j++ ) begin
+                first_matrix2[0][0] = first_matrix[1][1] * first_matrix[2][2] ^ first_matrix[1][2] * first_matrix[2][1];
+                first_matrix2[1][0] = first_matrix[0][1] * first_matrix[2][2] ^ first_matrix[0][2] * first_matrix[2][1];
+                first_matrix2[2][0] = first_matrix[0][1] * first_matrix[1][2] ^ first_matrix[0][2] * first_matrix[1][1];
+
+                first_matrix2[0][1] = first_matrix[1][0] * first_matrix[2][2] ^ first_matrix[1][2] * first_matrix[2][0];
+                first_matrix2[1][1] = first_matrix[0][0] * first_matrix[2][2] ^ first_matrix[0][2] * first_matrix[2][0];
+                first_matrix2[2][1] = first_matrix[0][0] * first_matrix[1][2] ^ first_matrix[0][2] * first_matrix[1][0];
+
+                first_matrix2[0][2] = first_matrix[1][0] * first_matrix[2][1] ^ first_matrix[1][1] * first_matrix[2][0];
+                first_matrix2[1][2] = first_matrix[0][0] * first_matrix[2][1] ^ first_matrix[0][1] * first_matrix[2][0];
+                first_matrix2[2][2] = first_matrix[0][0] * first_matrix[1][1] ^ first_matrix[0][1] * first_matrix[1][0];
+            end
+        end
+    end else if (size == 4) begin
+        first_matrix2[0][0] = (first_matrix[1][1] * first_matrix[2][2] * first_matrix[3][3]) ^(first_matrix[1][2] * first_matrix[2][3] * first_matrix[3][1]) ^(first_matrix[1][3] * first_matrix[2][1] * first_matrix[3][2]) ^(first_matrix[1][3] * first_matrix[2][2] * first_matrix[3][1]) ^(first_matrix[1][2] * first_matrix[2][1] * first_matrix[3][3]) ^(first_matrix[1][1] * first_matrix[2][3] * first_matrix[3][2]);
+        first_matrix2[0][1] = (first_matrix[1][0] * first_matrix[2][2] * first_matrix[3][3]) ^(first_matrix[1][2] * first_matrix[2][3] * first_matrix[3][0]) ^(first_matrix[1][3] * first_matrix[2][0] * first_matrix[3][2]) ^(first_matrix[1][3] * first_matrix[2][2] * first_matrix[3][0]) ^(first_matrix[1][2] * first_matrix[2][0] * first_matrix[3][3]) ^(first_matrix[1][0] * first_matrix[2][3] * first_matrix[3][2]);
+        first_matrix2[0][2] = (first_matrix[1][0] * first_matrix[2][1] * first_matrix[3][3]) ^(first_matrix[1][1] * first_matrix[2][3] * first_matrix[3][0]) ^(first_matrix[1][3] * first_matrix[2][0] * first_matrix[3][1]) ^(first_matrix[1][3] * first_matrix[2][1] * first_matrix[3][0]) ^(first_matrix[1][1] * first_matrix[2][0] * first_matrix[3][3]) ^(first_matrix[1][0] * first_matrix[2][3] * first_matrix[3][1]);
+        first_matrix2[0][3] = (first_matrix[1][0] * first_matrix[2][1] * first_matrix[3][2]) ^(first_matrix[1][1] * first_matrix[2][2] * first_matrix[3][0]) ^(first_matrix[1][2] * first_matrix[2][0] * first_matrix[3][1]) ^(first_matrix[1][2] * first_matrix[2][1] * first_matrix[3][0]) ^(first_matrix[1][1] * first_matrix[2][0] * first_matrix[3][2]) ^(first_matrix[1][0] * first_matrix[2][2] * first_matrix[3][1]);
+        first_matrix2[1][0] = (first_matrix[0][1] * first_matrix[2][2] * first_matrix[3][3]) ^(first_matrix[0][2] * first_matrix[2][3] * first_matrix[3][1]) ^(first_matrix[0][3] * first_matrix[2][1] * first_matrix[3][2]) ^(first_matrix[0][3] * first_matrix[2][2] * first_matrix[3][1]) ^(first_matrix[0][2] * first_matrix[2][1] * first_matrix[3][3]) ^(first_matrix[0][1] * first_matrix[2][3] * first_matrix[3][2]);
+        first_matrix2[1][1] = (first_matrix[0][0] * first_matrix[2][2] * first_matrix[3][3]) ^(first_matrix[0][2] * first_matrix[2][3] * first_matrix[3][0]) ^(first_matrix[0][3] * first_matrix[2][0] * first_matrix[3][2]) ^(first_matrix[0][3] * first_matrix[2][2] * first_matrix[3][0]) ^(first_matrix[0][2] * first_matrix[2][0] * first_matrix[3][3]) ^(first_matrix[0][0] * first_matrix[2][3] * first_matrix[3][2]);
+        first_matrix2[1][2] = (first_matrix[0][0] * first_matrix[2][1] * first_matrix[3][3]) ^(first_matrix[0][1] * first_matrix[2][3] * first_matrix[3][0]) ^(first_matrix[0][3] * first_matrix[2][0] * first_matrix[3][1]) ^(first_matrix[0][3] * first_matrix[2][1] * first_matrix[3][0]) ^(first_matrix[0][1] * first_matrix[2][0] * first_matrix[3][3]) ^(first_matrix[0][0] * first_matrix[2][3] * first_matrix[3][1]);
+        first_matrix2[1][3] = (first_matrix[0][0] * first_matrix[2][1] * first_matrix[3][2]) ^(first_matrix[0][1] * first_matrix[2][2] * first_matrix[3][0]) ^(first_matrix[0][2] * first_matrix[2][0] * first_matrix[3][1]) ^(first_matrix[0][2] * first_matrix[2][1] * first_matrix[3][0]) ^(first_matrix[0][1] * first_matrix[2][0] * first_matrix[3][2]) ^(first_matrix[0][0] * first_matrix[2][2] * first_matrix[3][1]);
+        first_matrix2[2][0] = (first_matrix[0][1] * first_matrix[1][2] * first_matrix[3][3]) ^(first_matrix[0][2] * first_matrix[1][3] * first_matrix[3][1]) ^(first_matrix[0][3] * first_matrix[1][1] * first_matrix[3][2]) ^(first_matrix[0][3] * first_matrix[1][2] * first_matrix[3][1]) ^(first_matrix[0][2] * first_matrix[1][1] * first_matrix[3][3]) ^(first_matrix[0][1] * first_matrix[1][3] * first_matrix[3][2]);
+        first_matrix2[2][1] = (first_matrix[0][0] * first_matrix[1][2] * first_matrix[3][3]) ^(first_matrix[0][2] * first_matrix[1][3] * first_matrix[3][0]) ^(first_matrix[0][3] * first_matrix[1][0] * first_matrix[3][2]) ^(first_matrix[0][3] * first_matrix[1][2] * first_matrix[3][0]) ^(first_matrix[0][2] * first_matrix[1][0] * first_matrix[3][3]) ^(first_matrix[0][0] * first_matrix[1][3] * first_matrix[3][2]);
+        first_matrix2[2][2] = (first_matrix[0][0] * first_matrix[1][1] * first_matrix[3][3]) ^(first_matrix[0][1] * first_matrix[1][3] * first_matrix[3][0]) ^(first_matrix[0][3] * first_matrix[1][0] * first_matrix[3][1]) ^(first_matrix[0][3] * first_matrix[1][1] * first_matrix[3][0]) ^(first_matrix[0][1] * first_matrix[1][0] * first_matrix[3][3]) ^(first_matrix[0][0] * first_matrix[1][3] * first_matrix[3][1]);
+        first_matrix2[2][3] = (first_matrix[0][0] * first_matrix[1][1] * first_matrix[3][2]) ^(first_matrix[0][1] * first_matrix[1][2] * first_matrix[3][0]) ^(first_matrix[0][2] * first_matrix[1][0] * first_matrix[3][1]) ^(first_matrix[0][2] * first_matrix[1][1] * first_matrix[3][0]) ^(first_matrix[0][1] * first_matrix[1][0] * first_matrix[3][2]) ^(first_matrix[0][0] * first_matrix[1][2] * first_matrix[3][1]);
+        first_matrix2[3][0] = (first_matrix[0][1] * first_matrix[1][2] * first_matrix[2][3]) ^(first_matrix[0][2] * first_matrix[1][3] * first_matrix[2][1]) ^(first_matrix[0][3] * first_matrix[1][1] * first_matrix[2][2]) ^(first_matrix[0][3] * first_matrix[1][2] * first_matrix[2][1]) ^(first_matrix[0][2] * first_matrix[1][1] * first_matrix[2][3]) ^(first_matrix[0][1] * first_matrix[1][3] * first_matrix[2][2]);
+        first_matrix2[3][1] = (first_matrix[0][0] * first_matrix[1][2] * first_matrix[2][3]) ^(first_matrix[0][2] * first_matrix[1][3] * first_matrix[2][0]) ^(first_matrix[0][3] * first_matrix[1][0] * first_matrix[2][2]) ^(first_matrix[0][3] * first_matrix[1][2] * first_matrix[2][0]) ^(first_matrix[0][2] * first_matrix[1][0] * first_matrix[2][3]) ^(first_matrix[0][0] * first_matrix[1][3] * first_matrix[2][2]);
+        first_matrix2[3][2] = (first_matrix[0][0] * first_matrix[1][1] * first_matrix[2][3]) ^(first_matrix[0][1] * first_matrix[1][3] * first_matrix[2][0]) ^(first_matrix[0][3] * first_matrix[1][0] * first_matrix[2][1]) ^(first_matrix[0][3] * first_matrix[1][1] * first_matrix[2][0]) ^(first_matrix[0][1] * first_matrix[1][0] * first_matrix[2][3]) ^(first_matrix[0][0] * first_matrix[1][3] * first_matrix[2][1]);
+        first_matrix2[3][3] = (first_matrix[0][0] * first_matrix[1][1] * first_matrix[2][2]) ^(first_matrix[0][1] * first_matrix[1][2] * first_matrix[2][0]) ^(first_matrix[0][2] * first_matrix[1][0] * first_matrix[2][1]) ^(first_matrix[0][2] * first_matrix[1][1] * first_matrix[2][0]) ^(first_matrix[0][1] * first_matrix[1][0] * first_matrix[2][2]) ^(first_matrix[0][0] * first_matrix[1][2] * first_matrix[2][1]);
+    end
+    first_matrix_out = first_matrix2;
+end
+endtask
+
 
 task first_matrix_determinant;
 input [104:0] first_matrix [3:0][3:0];
