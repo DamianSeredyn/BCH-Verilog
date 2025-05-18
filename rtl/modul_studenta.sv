@@ -204,7 +204,7 @@ logic [104:0] second_matrix [3:0];// macierz z prawej strony równania
 logic [104:0] second_matrix_sum [3:0];
 logic [104:0] first_matrix_sum;
 logic [104:0] first_matrix_trans [3:0][3:0];
-logic [104:0] where_errors [3:0];
+logic [104:0] where_errors [3:0];// pokazuje na których miejscach są błędy
 logic [4:0] i;
 logic [4:0] j;
 input [104:0] decoded_syndrome [8:0];
@@ -246,7 +246,7 @@ begin
 end
 endtask
 
-task error_place;
+task error_place;// działa tylko dla macierzy 2x2, na pewno wynik zgadza się z tym  co jest w filmiku na yt
 input [104:0] second_matrix_sum [3:0];
 input [4:0] size;
 output [104:0] where_errors [3:0];
@@ -275,8 +275,6 @@ begin
                     where_errors[1] = possible_values[j];
                     break;
                 end
-                //where_errors[0] = possible_values[i];
-                //where_errors[1] = possible_values[j];
             end
         end
     end
