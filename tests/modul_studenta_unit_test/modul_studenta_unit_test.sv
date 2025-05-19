@@ -246,9 +246,9 @@ endfunction
 
     
     `SVTEST(encoding_bch_test)
-        logic [7:0] signal_input = 8'b10101010;
-        logic [5:0] generator_signal = 6'b100101; 
-        logic [14:0] expected_encoded_signal = signal_input * generator_signal; 
+        logic [6:0] signal_input = 7'b0010011;
+        logic [6:0] generator_signal = 9'b111010001; //DO NOT TOUCH
+        logic [15:0] expected_encoded_signal = 16'b1111101100011; //Jak chce zmienić policz to sobie na kartce (signal * gen) i xorujesz wyniki
         int wait_cycles = 0;
        
         dut.state = dut.ENCODING_BCH;
@@ -309,7 +309,7 @@ endfunction
 
 
     `SVTEST(syndrome_coding_bch_test)
-        logic [104:0] signal_input = 104'b1110101101011;
+        logic [104:0] signal_input = 104'b1111101100111;
         int wait_cycles = 0;
 
         dut.syndrome_coding = signal_input;

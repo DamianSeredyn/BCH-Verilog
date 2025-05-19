@@ -35,9 +35,9 @@ logic BCH_coding = 1'b0;
 logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
-logic [7:0] signal_input = 8'b1010_1010; //temp value for testing
-logic [5:0] generator_signal = 6'b100101; //generator for encoding bch
-logic [13:0] encoded_signal =14'b0;
+logic [6:0] signal_input = 7'b0010011; //temp value for testing max 7 bits
+logic [8:0] generator_signal = 9'b111010001; //DO NOT TOUCH
+logic [15:0] encoded_signal =14'b0;
 logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
@@ -184,7 +184,10 @@ begin
         begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
-                decode_syndromes(correcting_capability*2,syndrome_coding); // syndrome numbering starts from 1;
+                decode_syndromes(correcting_capability*2,syndrome_coding);
+                // dodać, że jak decoded_syndrome[0] == 0 to mamy 0 błędów i task matrix ma sie nie wykonywac
+                // Jeżeli mamy 1 błąd a sprawdzamy 2 błędy to determinanta chyba wyjdzie 0 i w teście
+                // w tabeli która wyświetla Syndrome matrix 1 wszędzie będą x, to wtedy decoded_syndrome[0] to miejsce błędu
                 matrix(decoded_syndrome, correcting_capability);
                 BCH_decoded_finished <= 1'b1;
 
@@ -227,18 +230,18 @@ begin
 
     first_matrix_determinant(first_matrix,size,first_matrix_sum); // determinant calculation. Jeżeli jest mniej niż założona liczba błędów to wyjdzie 0, i powinniśmy spróbować innego rozmiaru
     syndromes(first_matrix_sum,first_matrix_sum); // syndrome from determinant
-    //powyżej tego momentu wszystko na pewno działa a poniżej działa dla 2 błędów a nie działa dla 3 i 4 chyba
-    minor(first_matrix,size,first_matrix); // z tym chyba jest problem
+    //powyżej tego momentu wszystko na pewno działa a poniżej działa dla równo 2 błędów. Nad wyzwoleniem matrix napisałem co trzeba jako tako zrobić
+    minor(first_matrix,size,first_matrix); // To raczej trzeba zmodyfikować by działało dla 3 i 4 błędów
 
     for (i = 0; i < size ; i++ ) begin
         for (j = 0; j < size ; j++ ) begin
-            first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum);
-            second_matrix_sum[i] = second_matrix_sum[i] + second_matrix[j]*first_matrix[i][j];
+            first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum); // wymnożenie przez determinante
+            second_matrix_sum[i] = second_matrix_sum[i] ^ second_matrix[j]*first_matrix[i][j]; // wymnożenie przez 2 macierz
         end
         syndromes(second_matrix_sum[i],second_matrix_sum[i]);
     end
 
-    error_place(second_matrix_sum,size,where_errors);
+    error_place(second_matrix_sum,size,where_errors); // znalezienie na których miejscach są błędy
 
     test_variable1 = first_matrix;
     test_variable2 = where_errors;
@@ -246,7 +249,7 @@ begin
 end
 endtask
 
-task error_place;// działa tylko dla macierzy 2x2, na pewno wynik zgadza się z tym  co jest w filmiku na yt
+task error_place;// działa tylko dla macierzy 2x2 czyli do 2 błędów
 input [104:0] second_matrix_sum [3:0];
 input [4:0] size;
 output [104:0] where_errors [3:0];
@@ -258,13 +261,16 @@ logic [5:0] j;
 i = 0;
 begin
     second_matrix_sum2 = second_matrix_sum;
+    //tworzenie wartości kolejnych zmiennych
     for (i = 6'b0; i < 16; i++)
     begin
         if (i == 0) possible_values[i] = 16'b10;
         else
         possible_values[i] = 16'b10 << i;
     end
-    for (j = 0; j < 16; j++)
+
+    //Dla 2 błędów mnożymy 2 możliwe wartości i muszą wyjść second_matrix_sum2[0] i po ich skróceniu muszą być równe second_matrix_sum2[1]. Jest to pokazane w filmiku pod koniec
+    for (j = 0; j < 16; j++) 
     begin
         for (i = 0; i < 16; i++)
         begin
@@ -284,7 +290,7 @@ endtask
 task minor; // Nie pamiętam jak to się nazywa ale chodzi o to, jak chcemy wiedzieć co jest w danym miejscu w macierzy...
 // to wykreślamy wiersz i kolumnę w której znajduje się nasza zmienna i liczymy resztę metodą sarrusa.
 // Ta funckja sarrus co napisałem to w sumie podziała tylko do liczenia macierzy 3x3 i determinanty 4x4, do tego raczej coś nowego by trzeba było napisać
-// Albo może o coś innego chodzi? idk nie mam siły, chodzi o adj(M), które widać w 9:23 w filmiki przypietym na dc
+//chodzi o adj(M), które widać w 9:23 w filmiki przypietym na dc
 input [104:0] first_matrix [3:0][3:0];
 input [4:0] size;
 output [104:0] first_matrix_out [3:0][3:0];
@@ -498,30 +504,39 @@ task syndromes;
         if(data[15])
             data_2 = data_2 ^ 105'b01;
         case (data_2)
-            15'b0011:  data_2 = 15'b10000;
-            15'b0110:  data_2 = 15'b100000;
-            15'b1100:  data_2 = 15'b1000000;
-            15'b1011:  data_2 = 15'b10000000;
-            15'b0101:  data_2 = 15'b100000000;
-            15'b1010:  data_2 = 15'b1000000000;
-            15'b0111:  data_2 = 15'b10000000000;
-            15'b1110:  data_2 = 15'b100000000000;
-            15'b1111:  data_2 = 15'b1000000000000;
-            15'b1101:  data_2 = 15'b10000000000000;
-            15'b1001:  data_2 = 15'b100000000000000;
+            16'b0011:  data_2 = 16'b10000;
+            16'b0110:  data_2 = 16'b100000;
+            16'b1100:  data_2 = 16'b1000000;
+            16'b1011:  data_2 = 16'b10000000;
+            16'b0101:  data_2 = 16'b100000000;
+            16'b1010:  data_2 = 16'b1000000000;
+            16'b0111:  data_2 = 16'b10000000000;
+            16'b1110:  data_2 = 16'b100000000000;
+            16'b1111:  data_2 = 16'b1000000000000;
+            16'b1101:  data_2 = 16'b10000000000000;
+            16'b1001:  data_2 = 16'b100000000000000;
+            16'b0001:  data_2 = 16'b1000000000000000;
             default: data_2 = data_2;
         endcase
         data_oo = data_2;
     end
 endtask
 
-function [13:0] encode_bch;
-    input [7:0] px;
-    input [5:0] gx;
+function [15:0] encode_bch;
+    input [6:0] px;
+    input [8:0] gx;
+    logic [15:0] result;
+    logic [5:0] i;
     begin
-        encode_bch = px * gx;
+        result = 16'b0;
+        for (i = 0; i < 7; i++) begin
+            if (px[i])
+                result = result ^ (gx << i);
+        end
+        encode_bch = result;
     end
 endfunction
+
 
 
 
