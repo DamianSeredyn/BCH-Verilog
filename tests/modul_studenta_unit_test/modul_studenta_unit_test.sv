@@ -299,6 +299,13 @@ endfunction
             transition_count++;
             $display("State transition %0d: %0s -> %0s [TIME = %0d]", transition_count,
                 appStateToString(prev_state), appStateToString(dut.state),i);
+            if(prev_state == dut.ENCODING_BCH)   begin
+                $display("Encdoded signal = %0b", dut.encoded_signal);
+            end
+            else if(prev_state == dut.GENERATE_NOISE) begin 
+                $display("Noised Signal = %0b", dut.encoded_signal);
+                $display("Noise = %0b", dut.data_out);
+            end
             prev_state = dut.state;
         end
     end

@@ -51,6 +51,37 @@ logic BCH_startNoise_finished = 1'b0;
 logic BCH_startErrorGen_finished = 1'b0;
 logic BCH_decoded_finished = 1'b0;
 
+// GAUSSSS
+  wire [15:0] data_out;
+  wire valid_ctg;
+  wire [63:0]  rnd;
+  wire vld;
+  wire valid_out;
+  logic ena;
+  
+
+    // Generator liczb pseudolosowych (CTG)
+gng_ctg #(
+    .INIT_Z1(64'h123456789ABCDEF0),
+    .INIT_Z2(64'h0FEDCBA987654321),
+    .INIT_Z3(64'hCAFEBABECAFEBABE)
+)prng (
+        .clk(clk),
+        .rstn(~rst),
+        .ce(ena),
+        .valid_out(valid_ctg),
+        .data_out(rnd)
+    );
+
+    // Interpolator – przekształca losowe bity w rozkład normalny
+    gng_interp interp (
+        .clk(clk),
+        .rstn(~rst),
+        .valid_in(valid_ctg),
+        .data_in(rnd),
+        .valid_out(valid_out),
+        .data_out(data_out)
+    );
 
 typedef enum logic[2:0]{
 	IDLE = 3'h0,
@@ -82,6 +113,15 @@ begin
                 generateNoise <= 1'b1;
 
                 transmition_Finished <= 1'b1;
+
+                if(generateNoise == 1'b1)
+                    begin
+                        ena <= 1'b1;    
+                    end
+                else
+                    begin
+                        ena <= 1'b0;    
+                    end
             end 
         end
 
@@ -152,8 +192,13 @@ begin
         begin
             if(state == GENERATE_NOISE && BCH_startNoise_finished == 1'b0)
             begin
-                BCH_startNoise_finished <= 1'b1;
-
+                if (valid_out) begin
+                    encoded_signal <= encoded_signal + data_out; 
+                    BCH_startNoise_finished <= 1'b1; 
+                end
+                else begin
+                    BCH_startNoise_finished <= 1'b0; 
+                end
             end
         end
 end
