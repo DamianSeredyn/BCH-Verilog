@@ -309,10 +309,10 @@ endfunction
 
 
     `SVTEST(syndrome_coding_bch_test)
-        logic [104:0] signal_input = 104'b1111101101111;
+        logic [104:0] signal_input = 104'b1111101100011;
         int wait_cycles = 0;
 
-        dut.syndrome_coding = signal_input;
+        //dut.syndrome_coding = signal_input;
 
         dut.state = dut.DECODING_BCH;
 

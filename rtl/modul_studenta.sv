@@ -38,7 +38,7 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [6:0] signal_input = 7'b0010011; //temp value for testing max 7 bits
 logic [8:0] generator_signal = 9'b111010001; //DO NOT TOUCH
 logic [15:0] encoded_signal =14'b0;
-logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [104:0] syndrome_coding = 104'b1111101101111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
 // transmition signals
@@ -185,11 +185,15 @@ begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
                 decode_syndromes(correcting_capability*2,syndrome_coding);
-                // dodać, że jak decoded_syndrome[0] == 0 to mamy 0 błędów i task matrix ma sie nie wykonywac
                 // Jeżeli mamy 1 błąd a sprawdzamy 2 błędy to determinanta chyba wyjdzie 0 i w teście
                 // w tabeli która wyświetla Syndrome matrix 1 wszędzie będą x, to wtedy decoded_syndrome[0] to miejsce błędu
-                if (decoded_syndrome[1] > 0)
+                // Jeżeli w tabeli syndrome matrix2 będziemy mieli x, a w syndrome matrix 1 będą jakieś wartości to mamy więcej błędów niż możemy sprawdzić
+                if (decoded_syndrome[0] == 0)
+                begin
+                    //Jakaś flaga, że nie ma błędów
+                end else begin
                 matrix(decoded_syndrome, correcting_capability);
+                end
                 BCH_decoded_finished <= 1'b1;
 
             end
@@ -242,7 +246,10 @@ begin
         syndromes(second_matrix_sum[i],second_matrix_sum[i]);
     end
 
-    error_place(second_matrix_sum,size,where_errors); // znalezienie na których miejscach są błędy
+    if(size == 2 && first_matrix[0][0] === 105'bx)
+        where_errors[0] = decoded_syndrome[0]; // tylko dla 1 błędu
+    else
+        error_place(second_matrix_sum,size,where_errors); // znalezienie na których miejscach są błędy
 
     test_variable1 = first_matrix;
     test_variable2 = where_errors;
@@ -259,7 +266,6 @@ logic [104:0] possible_values [15:0];
 logic [104:0] value_holder;
 logic [5:0] i;
 logic [5:0] j;
-i = 0;
 begin
     second_matrix_sum2 = second_matrix_sum;
     //tworzenie wartości kolejnych zmiennych
@@ -298,8 +304,6 @@ output [104:0] first_matrix_out [3:0][3:0];
 logic [104:0] first_matrix2[3:0][3:0];
 logic [4:0] i;
 logic [4:0] j;
-i = 5'b0;
-j = 5'b0;
 begin
     for (i = 0; i < size ; i++ ) begin
         for (j = 0; j < size ; j++ ) begin
