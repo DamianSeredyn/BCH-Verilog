@@ -35,6 +35,10 @@ logic BCH_coding = 1'b0;
 logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
+logic transmition_Finished = 1'b0;
+
+
+// BCH THINNNNNNNNNNGSSSSSSSSSSSSSSSSSSSSSSS!
 logic [7:0] signal_input = 8'b1010_1010; //temp value for testing
 logic [5:0] generator_signal = 6'b100101; //generator for encoding bch
 logic [13:0] encoded_signal =14'b0;
@@ -42,7 +46,7 @@ logic [104:0] syndrome_coding = 104'b1110101101011; // test value but variable u
 logic [20:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 2; //Number of errors that decoding can correct. MAX = 4
 // transmition signals
-logic transmition_Finished = 1'b0;
+
 
 
 // flags ending
@@ -59,12 +63,19 @@ logic BCH_decoded_finished = 1'b0;
   wire valid_out;
   logic ena;
   
+  // Random error generator
+  logic [7:0] current_iteration;
+  logic [13:0] encoded_signal_mask =14'b0;
+  logic [3:0] rand_idx;
+    localparam WIDTH = 13;
+
+    assign rand_idx = rnd[3:0];
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
-    .INIT_Z1(64'h123456789ABCDEF0),
-    .INIT_Z2(64'h0FEDCBA987654321),
-    .INIT_Z3(64'hCAFEBABECAFEBABE)
+    .INIT_Z1(64'hA1B2C3D4E5F60789),
+    .INIT_Z2(64'h1234DEADBEEF5678),
+    .INIT_Z3(64'h9ABCDEF012345678)
 )prng (
         .clk(clk),
         .rstn(~rst),
@@ -110,17 +121,27 @@ begin
             if (DebugTestSystem == 1'b1)
             begin
                 BCH_coding <= 1'b1;
-                generateNoise <= 1'b1;
+                
+                generateNoise <= 1'b0;
+                randomGenerateErrors <= 1'b1;
 
                 transmition_Finished <= 1'b1;
 
-                if(generateNoise == 1'b1)
+                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
                     begin
                         ena <= 1'b1;    
                     end
                 else
                     begin
                         ena <= 1'b0;    
+                    end
+                if(randomGenerateErrors == 1'b1)
+                    begin
+                        numberOfGenerateErrors <= 3;    
+                    end
+                else
+                    begin
+                        numberOfGenerateErrors <= 0;    
                     end
             end 
         end
@@ -208,14 +229,23 @@ begin
     if(rst == 1'b1)
         begin
             BCH_startErrorGen_finished <= 1'b0;
+            current_iteration <= 0;
+            encoded_signal_mask <= 0;
         end
     else
         begin
             if(state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0)
             begin
-                BCH_startErrorGen_finished <= 1'b1;
 
-            end
+                if (rand_idx < WIDTH && encoded_signal_mask[rand_idx] == 0) begin
+                    encoded_signal[rand_idx] <= ~encoded_signal[rand_idx];
+                    encoded_signal_mask[rand_idx] <= 1;
+                    current_iteration <= current_iteration + 1;
+
+                    if (current_iteration == numberOfGenerateErrors-1)
+                        BCH_startErrorGen_finished <= 1;
+                    end
+                end
         end
 end
 

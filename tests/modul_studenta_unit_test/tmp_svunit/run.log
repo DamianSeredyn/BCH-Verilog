@@ -1,6 +1,6 @@
 # vsim -suppress 12003,8386 -voptargs="+acc" -sv_seed random -do "../modul_studenta_unit_test.do" -do "run -all; quit" -c -lib work -l run.log testrunner 
-# Start time: 20:39:25 on May 20,2025
-# ** Note: (vsim-8009) Loading existing optimized design _opt
+# Start time: 00:04:56 on May 22,2025
+# ** Note: (vsim-3813) Design is being optimized due to module recompilation...
 # //  Questa Intel Starter FPGA Edition-64
 # //  Version 2021.2 linux_x86_64 Apr 14 2021
 # //
@@ -34,7 +34,7 @@
 # Loading work.gng_smul_16_18_sadd_37(fast)
 # Loading work.gng_smul_16_18(fast)
 # Loading work.registers(fast)
-# Sv_Seed = 1031618292
+# Sv_Seed = 3448651685
 # do ../modul_studenta_unit_test.do
 # 
 # add wave -position insertpoint  \
@@ -107,30 +107,42 @@
 # encoded signal = 1100010010010
 # expected signal = 1100010010010
 # INFO:  [160000][modul_studenta_unit_test]: encoding_bch_test::PASSED
-# INFO:  [160000][modul_studenta_unit_test]: process_test::RUNNING
+# INFO:  [160000][modul_studenta_unit_test]: rndTEST::RUNNING
+# Cykl 0: wartosc sygnalu = 0
+# Cykl 1: wartosc sygnalu = 115f39d379cb8515
+# Cykl 2: wartosc sygnalu = 115f39d379cb8515
+# Cykl 3: wartosc sygnalu = 115f39d379cb8515
+# Cykl 4: wartosc sygnalu = 115f39d379cb8515
+# Cykl 5: wartosc sygnalu = 115f39d379cb8515
+# Cykl 6: wartosc sygnalu = 115f39d379cb8515
+# Cykl 7: wartosc sygnalu = 115f39d379cb8515
+# Cykl 8: wartosc sygnalu = 115f39d379cb8515
+# Cykl 9: wartosc sygnalu = 115f39d379cb8515
+# INFO:  [395000][modul_studenta_unit_test]: rndTEST::PASSED
+# INFO:  [395000][modul_studenta_unit_test]: process_test::RUNNING
 # ==============================
 #      INIT PROCESS TEST        
 # ==============================
 # State transition 1: IDLE -> ENCODING_BCH [TIME = 2]
-# State transition 2: ENCODING_BCH -> GENERATE_NOISE [TIME = 4]
+# State transition 2: ENCODING_BCH -> GENERATE_ERRORS [TIME = 4]
 # Encdoded signal = 1100010010010
-# State transition 3: GENERATE_NOISE -> DECODING_BCH [TIME = 15]
-# Noised Signal = 1001111110011
-# Noise = 1100111100
-# State transition 4: DECODING_BCH -> FINISHED [TIME = 17]
+# State transition 3: GENERATE_ERRORS -> DECODING_BCH [TIME = 9]
+# Noised Signal = 1100001000010
+# Number of Errors = 3
+# State transition 4: DECODING_BCH -> FINISHED [TIME = 11]
 # Total number of state transitions: 4
-# INFO:  [20295000][modul_studenta_unit_test]: process_test::PASSED
-# INFO:  [20295000][modul_studenta_unit_test]: syndrome_coding_bch_test::RUNNING
+# INFO:  [20525000][modul_studenta_unit_test]: process_test::PASSED
+# INFO:  [20525000][modul_studenta_unit_test]: syndrome_coding_bch_test::RUNNING
 # state of BCH_decoded = 1
 # Input signal = 1110101101011
 # syndrome decoding result = 10  100  100000000  10000  x  x  x  x
-# INFO:  [20465000][modul_studenta_unit_test]: syndrome_coding_bch_test::PASSED
-# INFO:  [20465000][modul_studenta_unit_test]: PASSED (3 of 3 tests passing)
+# INFO:  [20695000][modul_studenta_unit_test]: syndrome_coding_bch_test::PASSED
+# INFO:  [20695000][modul_studenta_unit_test]: PASSED (4 of 4 tests passing)
 # 
-# INFO:  [20465000][__ts]: PASSED (1 of 1 testcases passing)
+# INFO:  [20695000][__ts]: PASSED (1 of 1 testcases passing)
 # 
-# INFO:  [20465000][testrunner]: PASSED (1 of 1 suites passing) [SVUnit 3.38.0]
+# INFO:  [20695000][testrunner]: PASSED (1 of 1 suites passing) [SVUnit 3.38.0]
 # ** Note: $finish    : .testrunner.sv(40)
-#    Time: 20465 ns  Iteration: 2  Instance: /testrunner
-# End time: 20:39:27 on May 20,2025, Elapsed time: 0:00:02
+#    Time: 20695 ns  Iteration: 2  Instance: /testrunner
+# End time: 00:04:58 on May 22,2025, Elapsed time: 0:00:02
 # Errors: 0, Warnings: 0

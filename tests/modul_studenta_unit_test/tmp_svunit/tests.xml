@@ -2,6 +2,8 @@
   <testsuite name="__ts">
     <testcase classname="modul_studenta_unit_test" name="encoding_bch_test">
     </testcase>
+    <testcase classname="modul_studenta_unit_test" name="rndTEST">
+    </testcase>
     <testcase classname="modul_studenta_unit_test" name="process_test">
     </testcase>
     <testcase classname="modul_studenta_unit_test" name="syndrome_coding_bch_test">
