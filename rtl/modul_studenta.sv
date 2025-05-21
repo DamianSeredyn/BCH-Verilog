@@ -38,7 +38,7 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [6:0] signal_input = 7'b0010011; //temp value for testing max 7 bits
 logic [8:0] generator_signal = 9'b111010001; //DO NOT TOUCH
 logic [15:0] encoded_signal =14'b0;
-logic [104:0] syndrome_coding = 104'b1111101100011; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [104:0] syndrome_coding = 104'b1111101101111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
 logic [104:0] error_correction [3:0];
@@ -188,10 +188,7 @@ begin
             begin
                 decode_syndromes(correcting_capability*2,syndrome_coding);
                 // narazie działa dla 0,1,2 błędów
-                if (decoded_syndrome[0] == 0)
-                begin
-                    //Dodać Jakąś flage, że nie ma błędów
-                end else begin
+                if (decoded_syndrome[0] != 0)begin
                 matrix(decoded_syndrome, correcting_capability, error_correction);
                 end
                 decoded_signal = syndrome_coding;
