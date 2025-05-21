@@ -313,7 +313,7 @@ endfunction
         int wait_cycles = 0;
 
         //dut.syndrome_coding = signal_input;
-
+        $display("Input signal = %0b", dut.syndrome_coding);
         dut.state = dut.DECODING_BCH;
 
         while (dut.BCH_encoded_finished !== 1'b1) 
@@ -327,7 +327,6 @@ endfunction
             end
         end
         $display("state of BCH_decoded = %0b", dut.BCH_decoded_finished);
-        $display("Input signal = %0b", dut.syndrome_coding);
         $display("syndrome decoding result = %0b", dut.decoded_syndrome[0], "  %0b",dut.decoded_syndrome[1],
         "  %0b",dut.decoded_syndrome[2],"  %0b",dut.decoded_syndrome[3],"  %0b",dut.decoded_syndrome[4],
         "  %0b",dut.decoded_syndrome[5],"  %0b",dut.decoded_syndrome[6],"  %0b",dut.decoded_syndrome[7]);
@@ -344,6 +343,8 @@ endfunction
         end
         $display("\n");
         $display("second matrix sum = %0b", dut.test_variable3);
+        $display("\n");
+        $display("signal output = %0b", dut.decoded_signal);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[0], 2'b10);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);

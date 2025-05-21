@@ -38,9 +38,11 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [6:0] signal_input = 7'b0010011; //temp value for testing max 7 bits
 logic [8:0] generator_signal = 9'b111010001; //DO NOT TOUCH
 logic [15:0] encoded_signal =14'b0;
-logic [104:0] syndrome_coding = 104'b1111101101111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [104:0] syndrome_coding = 104'b1111101100011; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
+logic [104:0] error_correction [3:0];
+logic [104:0] decoded_signal = 105'b0; // final decoded signal
 // transmition signals
 logic transmition_Finished = 1'b0;
 
@@ -185,14 +187,17 @@ begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
                 decode_syndromes(correcting_capability*2,syndrome_coding);
-                // Jeżeli mamy 1 błąd a sprawdzamy 2 błędy to determinanta chyba wyjdzie 0 i w teście
-                // w tabeli która wyświetla Syndrome matrix 1 wszędzie będą x, to wtedy decoded_syndrome[0] to miejsce błędu
-                // Jeżeli w tabeli syndrome matrix2 będziemy mieli x, a w syndrome matrix 1 będą jakieś wartości to mamy więcej błędów niż możemy sprawdzić
+                // narazie działa dla 0,1,2 błędów
                 if (decoded_syndrome[0] == 0)
                 begin
-                    //Jakaś flaga, że nie ma błędów
+                    //Dodać Jakąś flage, że nie ma błędów
                 end else begin
-                matrix(decoded_syndrome, correcting_capability);
+                matrix(decoded_syndrome, correcting_capability, error_correction);
+                end
+                decoded_signal = syndrome_coding;
+                for (logic [3:0] k = 0;k < 2 ;k++ ) begin
+                    if (error_correction[k] !== 105'bx)
+                    decoded_signal = decoded_signal ^ error_correction[k];
                 end
                 BCH_decoded_finished <= 1'b1;
 
@@ -217,6 +222,7 @@ logic [4:0] i;
 logic [4:0] j;
 input [104:0] decoded_syndrome [8:0];
 input [4:0] size;
+output [104:0] data_o [3:0];
 begin
     decoded_syndrome2 = decoded_syndrome;
     first_matrix_sum = 105'b0;
@@ -243,6 +249,7 @@ begin
             first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum); // wymnożenie przez determinante
             second_matrix_sum[i] = second_matrix_sum[i] ^ second_matrix[j]*first_matrix[i][j]; // wymnożenie przez 2 macierz
         end
+        data_o[i] = 105'b0;
         syndromes(second_matrix_sum[i],second_matrix_sum[i]);
     end
 
@@ -250,6 +257,8 @@ begin
         where_errors[0] = decoded_syndrome[0]; // tylko dla 1 błędu
     else
         error_place(second_matrix_sum,size,where_errors); // znalezienie na których miejscach są błędy
+
+    data_o = where_errors;
 
     test_variable1 = first_matrix;
     test_variable2 = where_errors;
