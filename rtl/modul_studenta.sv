@@ -42,7 +42,7 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [4:0] signal_input = 5'b10011; //temp value for testing max 7 bits
 // generator dla max 2 błędów 9'b111010001. Możemy przesłać max 7 bitów
 // generator dla max 3 błędów 11'b10100110111 // Możemy przesłać maksymalnie 5 bitów
-logic [10:0] generator_signal = 11'b10100111111; //DO NOT TOUCH
+logic [10:0] generator_signal = 11'b10100110111; //DO NOT TOUCH
 // dodać funkcję która po przesłaniu danych będzie zerować te wszystkie poniższe zmienne
 logic [15:0] encoded_signal = 16'b0;
 logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
