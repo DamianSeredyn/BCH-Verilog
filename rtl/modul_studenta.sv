@@ -136,13 +136,13 @@ begin
     if(rst == 1'b1)
         begin
             BCH_encoded_finished <= 1'b0;
+            encoded_signal <= 16'b0;
         end
     else
         begin
         if (state == ENCODING_BCH && BCH_encoded_finished == 1'b0)
             begin
                 encoded_signal <= encode_bch(signal_input, generator_signal);
-                encoded_signal <= 16'b0;
                 BCH_encoded_finished <= 1'b1;
             end
         end
