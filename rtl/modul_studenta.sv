@@ -35,13 +35,13 @@ logic BCH_coding = 1'b0;
 logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
-logic [6:0] signal_input = 7'b0010011; //temp value for testing max 7 bits
+logic [4:0] signal_input = 5'b10011; //temp value for testing max 7 bits
 // generator dla max 2 błędów 9'b111010001. Możemy przesłać max 7 bitów
 // generator dla max 3 błędów 11'b10100110111 // Możemy przesłać maksymalnie 5 bitów
-logic [8:0] generator_signal = 9'b111010001; //DO NOT TOUCH
+logic [10:0] generator_signal = 11'b10100110111; //DO NOT TOUCH
 // dodać funkcję która po przesłaniu danych będzie zerować te wszystkie poniższe zmienne
 logic [15:0] encoded_signal = 16'b0;
-logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [104:0] syndrome_coding = 104'b101110000101001; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
 logic [104:0] error_correction [3:0];
@@ -142,6 +142,7 @@ begin
         if (state == ENCODING_BCH && BCH_encoded_finished == 1'b0)
             begin
                 encoded_signal <= encode_bch(signal_input, generator_signal);
+                encoded_signal <= 16'b0;
                 BCH_encoded_finished <= 1'b1;
             end
         end
@@ -184,7 +185,18 @@ always_ff @(posedge clk or posedge rst)
 begin
     if(rst == 1'b1)
         begin
-             BCH_decoded_finished <= 1'b0;
+            BCH_decoded_finished <= 1'b0;
+            syndrome_coding <= 105'b101110000111111;
+            correcting_capability <= 3;
+            decoded_signal <= 105'b0;
+            lower_correcting_capability <= 1'b0;
+            correcting_capability <= 3;
+            for (logic [3:0] i = 0; i < 4 ;i++ ) begin
+                error_correction[i] <= 105'b0;
+            end
+            for (logic [3:0] i = 0;i < 9 ;i++ ) begin
+                decoded_syndrome[i] <= 105'b0;
+            end
         end
     else
         begin
@@ -208,9 +220,8 @@ begin
                     decoded_signal = decoded_signal ^ error_correction[k];
                 end
                 if (error_correction[0] === 105'bx)begin
-                    
+                   // dodać jakąś flagę, że mamy więcej błędów niż kodowanie przewiduje 
                 end
-                // dodać jakąś flagę, że mamy więcej błędów niż kodowanie przewiduje
                 BCH_decoded_finished <= 1'b1;
             end
         end
@@ -337,10 +348,7 @@ begin
 end
 endtask
 
-task minor; // Nie pamiętam jak to się nazywa ale chodzi o to, jak chcemy wiedzieć co jest w danym miejscu w macierzy...
-// to wykreślamy wiersz i kolumnę w której znajduje się nasza zmienna i liczymy resztę metodą sarrusa.
-// Ta funckja sarrus co napisałem to w sumie podziała tylko do liczenia macierzy 3x3 i determinanty 4x4, do tego raczej coś nowego by trzeba było napisać
-//chodzi o adj(M), które widać w 9:23 w filmiki przypietym na dc
+task minor;
 input [104:0] first_matrix [3:0][3:0];
 input [4:0] size;
 output [104:0] first_matrix_out [3:0][3:0];
@@ -378,7 +386,7 @@ begin
             end
         end
     end else if (size == 4) begin
-       //first_matrix2[0][0] = ()^()^()^()^()^();
+        // do zrobienia
     end
     first_matrix_out = first_matrix2;
 end
@@ -557,8 +565,8 @@ task syndromes;
 endtask
 
 function [15:0] encode_bch;
-    input [6:0] px;
-    input [8:0] gx;
+    input [4:0] px;
+    input [10:0] gx;
     logic [15:0] result;
     logic [5:0] i;
     begin
