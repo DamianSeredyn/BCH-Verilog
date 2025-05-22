@@ -61,6 +61,8 @@ module modul_studenta_unit_test;
     
     logic [ 7:0] LED;
     logic DEBUGTESTSYSTEM;
+    logic UART_TX;
+    logic UART_RX;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -136,7 +138,10 @@ module modul_studenta_unit_test;
         .s_axil_rresp    ( s_axil_rresp   ),
 
         .DebugTestSystem ( DEBUGTESTSYSTEM),
-        .LED             ( LED            )
+        .LED             ( LED            ),
+        .UART_RX         ( UART_RX        ),
+        .UART_TX         ( UART_TX        )
+        
     );
 
     typedef enum logic[2:0]{

@@ -4,6 +4,7 @@
 ../../../axi4_lite/axi4_lite_if.sv
 ../../../axi4_lite/unit_test_pkg.sv
 ../../../rtl/modul_studenta.sv
+../../../rtl/clock_div.sv
 ../../../rtl/Gauss/gng.v
 ../../../rtl/Gauss/gng_ctg.v
 ../../../rtl/Gauss/gng_coef.v

@@ -23,7 +23,11 @@ module modul_studenta (
     output logic [1:0]  s_axil_rresp,
 
     output logic [7:0]  LED,
-    input  logic        DebugTestSystem
+    input  logic        DebugTestSystem,
+
+    input  wire  UART_RX,
+    output logic UART_TX
+
 );
 
 import registers_pkg::*;
