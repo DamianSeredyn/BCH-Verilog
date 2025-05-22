@@ -23,7 +23,11 @@ module modul_studenta (
     output logic [1:0]  s_axil_rresp,
 
     output logic [7:0]  LED,
-    input  logic        DebugTestSystem
+    input  logic        DebugTestSystem,
+
+    input  wire  UART_RX,
+    output logic UART_TX
+
 );
 
 import registers_pkg::*;
@@ -57,6 +61,44 @@ logic BCH_startNoise_finished = 1'b0;
 logic BCH_startErrorGen_finished = 1'b0;
 logic BCH_decoded_finished = 1'b0;
 
+// GAUSSSS
+  wire [15:0] data_out;
+  wire valid_ctg;
+  wire [63:0]  rnd;
+  wire vld;
+  wire valid_out;
+  logic ena;
+  
+  // Random error generator
+  logic [7:0] current_iteration;
+  logic [13:0] encoded_signal_mask =14'b0;
+  logic [3:0] rand_idx;
+    localparam WIDTH = 13;
+
+    assign rand_idx = rnd[3:0];
+
+    // Generator liczb pseudolosowych (CTG)
+gng_ctg #(
+    .INIT_Z1(64'hA1B2C3D4E5F60789),
+    .INIT_Z2(64'h1234DEADBEEF5678),
+    .INIT_Z3(64'h9ABCDEF012345678)
+)prng (
+        .clk(clk),
+        .rstn(~rst),
+        .ce(ena),
+        .valid_out(valid_ctg),
+        .data_out(rnd)
+    );
+
+    // Interpolator – przekształca losowe bity w rozkład normalny
+    gng_interp interp (
+        .clk(clk),
+        .rstn(~rst),
+        .valid_in(valid_ctg),
+        .data_in(rnd),
+        .valid_out(valid_out),
+        .data_out(data_out)
+    );
 
 typedef enum logic[2:0]{
 	IDLE = 3'h0,
@@ -85,9 +127,28 @@ begin
             if (DebugTestSystem == 1'b1)
             begin
                 BCH_coding <= 1'b1;
-                generateNoise <= 1'b1;
+                
+                generateNoise <= 1'b0;
+                randomGenerateErrors <= 1'b1;
 
                 transmition_Finished <= 1'b1;
+
+                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
+                    begin
+                        ena <= 1'b1;    
+                    end
+                else
+                    begin
+                        ena <= 1'b0;    
+                    end
+                if(randomGenerateErrors == 1'b1)
+                    begin
+                        numberOfGenerateErrors <= 3;    
+                    end
+                else
+                    begin
+                        numberOfGenerateErrors <= 0;    
+                    end
             end 
         end
 
@@ -159,8 +220,13 @@ begin
         begin
             if(state == GENERATE_NOISE && BCH_startNoise_finished == 1'b0)
             begin
-                BCH_startNoise_finished <= 1'b1;
-
+                if (valid_out) begin
+                    encoded_signal <= encoded_signal + data_out; 
+                    BCH_startNoise_finished <= 1'b1; 
+                end
+                else begin
+                    BCH_startNoise_finished <= 1'b0; 
+                end
             end
         end
 end
@@ -170,14 +236,23 @@ begin
     if(rst == 1'b1)
         begin
             BCH_startErrorGen_finished <= 1'b0;
+            current_iteration <= 0;
+            encoded_signal_mask <= 0;
         end
     else
         begin
             if(state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0)
             begin
-                BCH_startErrorGen_finished <= 1'b1;
 
-            end
+                if (rand_idx < WIDTH && encoded_signal_mask[rand_idx] == 0) begin
+                    encoded_signal[rand_idx] <= ~encoded_signal[rand_idx];
+                    encoded_signal_mask[rand_idx] <= 1;
+                    current_iteration <= current_iteration + 1;
+
+                    if (current_iteration == numberOfGenerateErrors-1)
+                        BCH_startErrorGen_finished <= 1;
+                    end
+                end
         end
 end
 

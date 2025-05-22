@@ -26,6 +26,34 @@ R0
 R0
 R0
 R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
+R0
 !s11f MIXED_VERSIONS
 13
 !s112 1.1
@@ -38,24 +66,24 @@ v__testsuite
 Z2 DXx6 sv_std 3 std 0 22 9oUSJO;AeEaW`l:M@^WG92
 Z3 DXx4 work 9 junit_xml 0 22 iiSz?iS]h4c1n1moN_Dc:1
 Z4 DXx4 work 10 svunit_pkg 0 22 `8MJO<=8`6S64cR`3LQFF3
-Z5 !s110 1747340965
+Z5 !s110 1747926086
 !i10b 1
 !s100 EPe@^mS80eb_bj;]ih1Z71
 IUEFIPR;e[XDbZCcQ=LFhI2
 S1
 R1
-Z6 w1747340965
+Z6 w1747926086
 8.__testsuite.sv
 F.__testsuite.sv
-!i122 38
+!i122 99
 L0 1 35
 Z7 VDg1SIo80bB@j0V0VzS_@n1
 Z8 OL;L;2021.2;73
 r1
 !s85 0
 31
-Z9 !s108 1747340965.000000
-!s107 /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/../svunit/svunit_base/svunit_defines.svh|../../../axi4_lite/axi4_lite_driver_slave.svh|../../../axi4_lite/modport.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter_for_single_pattern.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testrunner.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testcase.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_test.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_base.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_string_utils.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_types.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_globals.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_internal_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_version_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestSuite.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestCase.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/XmlElement.svh|.testrunner.sv|.__testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv|../../../rtl/modul_studenta.sv|../../../axi4_lite/unit_test_pkg.sv|../../../axi4_lite/axi4_lite_if.sv|../../../axi4_lite/axi4_lite_pkg.sv|../../../rdl/outputs/registers.sv|../../../rdl/outputs/registers_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/junit_xml.sv|
+Z9 !s108 1747926086.000000
+!s107 /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/../svunit/svunit_base/svunit_defines.svh|../../../axi4_lite/axi4_lite_driver_slave.svh|../../../axi4_lite/modport.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter_for_single_pattern.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testrunner.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testcase.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_test.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_base.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_string_utils.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_types.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_globals.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_internal_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_version_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestSuite.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestCase.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/XmlElement.svh|.testrunner.sv|.__testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv|../../../rtl/Gauss/gng_smul_16_18.v|../../../rtl/Gauss/gng_smul_16_18_sadd_37.v|../../../rtl/Gauss/gng_lzd.v|../../../rtl/Gauss/gng_interp.v|../../../rtl/Gauss/gng_coef.v|../../../rtl/Gauss/gng_ctg.v|../../../rtl/Gauss/gng.v|../../../rtl/clock_div.sv|../../../rtl/modul_studenta.sv|../../../axi4_lite/unit_test_pkg.sv|../../../axi4_lite/axi4_lite_if.sv|../../../axi4_lite/axi4_lite_pkg.sv|../../../rdl/outputs/registers.sv|../../../rdl/outputs/registers_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/junit_xml.sv|
 Z10 !s90 -l|compile.log|-f|.svunit.f|
 !i113 0
 Z11 o-L mtiAvm -L mtiRnm -L mtiOvm -L mtiUvm -L mtiUPF -L infact
@@ -64,11 +92,11 @@ Z13 tCvgOpt 0
 n@__testsuite
 T_opt
 !s11d unit_test_pkg /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/tmp_svunit/work 1 axi4_lite_if 1 /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/tmp_svunit/work 
-!s110 1747249837
-VzbFgP=gc2z2VU_Gkn;X6z0
+!s110 1747922025
+VnLHGMe]fCg;fffE241FV[0
 04 10 4 work testrunner fast 0
-=1-000533485c57-6824eaac-e698c-124ea1
-!s124 OEM10U6 
+=1-000533485c57-682f2c68-f34e3-29450b
+!s124 OEM10U12 
 o-quiet -auto_acc_if_foreign -work work -suppress 12003,8386 +acc
 R13
 n@_opt
@@ -86,7 +114,7 @@ R1
 Z15 w1747229796
 8../../../axi4_lite/axi4_lite_if.sv
 F../../../axi4_lite/axi4_lite_if.sv
-!i122 38
+!i122 99
 L0 18 0
 R7
 R8
@@ -94,7 +122,7 @@ r1
 !s85 0
 31
 R9
-Z16 !s107 /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/../svunit/svunit_base/svunit_defines.svh|../../../axi4_lite/axi4_lite_driver_slave.svh|../../../axi4_lite/modport.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter_for_single_pattern.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testrunner.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testcase.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_test.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_base.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_string_utils.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_types.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_globals.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_internal_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_version_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestSuite.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestCase.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/XmlElement.svh|.testrunner.sv|.__testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv|../../../rtl/modul_studenta.sv|../../../axi4_lite/unit_test_pkg.sv|../../../axi4_lite/axi4_lite_if.sv|../../../axi4_lite/axi4_lite_pkg.sv|../../../rdl/outputs/registers.sv|../../../rdl/outputs/registers_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/junit_xml.sv|
+Z16 !s107 /prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/../svunit/svunit_base/svunit_defines.svh|../../../axi4_lite/axi4_lite_driver_slave.svh|../../../axi4_lite/modport.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter_for_single_pattern.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testrunner.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testcase.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_test.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_base.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_string_utils.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_types.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_globals.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_internal_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_version_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_defines.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestSuite.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestCase.svh|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/XmlElement.svh|.testrunner.sv|.__testsuite.sv|/prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv|../../../rtl/Gauss/gng_smul_16_18.v|../../../rtl/Gauss/gng_smul_16_18_sadd_37.v|../../../rtl/Gauss/gng_lzd.v|../../../rtl/Gauss/gng_interp.v|../../../rtl/Gauss/gng_coef.v|../../../rtl/Gauss/gng_ctg.v|../../../rtl/Gauss/gng.v|../../../rtl/clock_div.sv|../../../rtl/modul_studenta.sv|../../../axi4_lite/unit_test_pkg.sv|../../../axi4_lite/axi4_lite_if.sv|../../../axi4_lite/axi4_lite_pkg.sv|../../../rdl/outputs/registers.sv|../../../rdl/outputs/registers_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_pkg.sv|/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/junit_xml.sv|
 R10
 !i113 0
 R11
@@ -111,9 +139,195 @@ R1
 R15
 8../../../axi4_lite/axi4_lite_pkg.sv
 F../../../axi4_lite/axi4_lite_pkg.sv
-!i122 38
+!i122 99
 Z17 L0 4 0
 V44dmU7mD48R4Xa6G98bgW3
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vclock_div
+R2
+R5
+!i10b 1
+!s100 baTn2GJ@VFaI?CMFGWINJ2
+I23=UI>kEbl0cA1h1l3K[`3
+S1
+R1
+w1747926062
+8../../../rtl/clock_div.sv
+F../../../rtl/clock_div.sv
+!i122 99
+L0 1 22
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng
+R5
+!i10b 1
+!s100 9YbjKekV^@kCIgHo843E62
+IB[<?R>Wh`WDK5hDjk`1[22
+R1
+Z18 w1747747269
+8../../../rtl/Gauss/gng.v
+F../../../rtl/Gauss/gng.v
+!i122 99
+L0 39 45
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng_coef
+R5
+!i10b 1
+!s100 `a4CF^aD?TkbK6_kT=2O]1
+I?hDo:HY2R:M7;l7ka@U;Q3
+R1
+R18
+8../../../rtl/Gauss/gng_coef.v
+F../../../rtl/Gauss/gng_coef.v
+!i122 99
+L0 39 280
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng_ctg
+R5
+!i10b 1
+!s100 lh^V;`aB@f1ZdVcTJXnmA1
+I<gkDP9Hna;@@F2Y790ofR0
+R1
+R18
+8../../../rtl/Gauss/gng_ctg.v
+F../../../rtl/Gauss/gng_ctg.v
+!i122 99
+L0 41 57
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng_interp
+R5
+!i10b 1
+!s100 `gZKj:;fHHYLiY=XP6;9W2
+I_LA<lgc`m8TK@_RhI[kW40
+R1
+R18
+8../../../rtl/Gauss/gng_interp.v
+F../../../rtl/Gauss/gng_interp.v
+!i122 99
+L0 39 185
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng_lzd
+R5
+!i10b 1
+!s100 _XN@9_C>VDi4H6iNm9F0Q3
+IS4?2AVo:Y`C=^UHoDagTg2
+R1
+R18
+8../../../rtl/Gauss/gng_lzd.v
+F../../../rtl/Gauss/gng_lzd.v
+!i122 99
+L0 39 161
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng_smul_16_18
+R5
+!i10b 1
+!s100 29ij1ik>9>W`ncLkIXmI;3
+IIVFK[4=W2M>nBa5:XGE[J1
+R1
+R18
+8../../../rtl/Gauss/gng_smul_16_18.v
+F../../../rtl/Gauss/gng_smul_16_18.v
+!i122 99
+L0 39 28
+R7
+R8
+r1
+!s85 0
+31
+R9
+R16
+R10
+!i113 0
+R11
+R12
+R13
+vgng_smul_16_18_sadd_37
+R5
+!i10b 1
+!s100 P7[Ef8?RWS@5_jY@kOO`I2
+I41]=mPf[oCJ3Zh;iQEa`Y3
+R1
+R18
+8../../../rtl/Gauss/gng_smul_16_18_sadd_37.v
+F../../../rtl/Gauss/gng_smul_16_18_sadd_37.v
+!i122 99
+L0 40 39
+R7
 R8
 r1
 !s85 0
@@ -139,7 +353,7 @@ F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/junit_xml.sv
 F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/XmlElement.svh
 F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestCase.svh
 F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/junit-xml/TestSuite.svh
-!i122 38
+!i122 99
 L0 19 0
 ViiSz?iS]h4c1n1moN_Dc:1
 R8
@@ -155,18 +369,18 @@ R12
 R13
 vmodul_studenta
 R2
-Z18 DXx4 work 13 registers_pkg 0 22 Y^aczhMAL2dFW2hbgi>_80
+Z19 DXx4 work 13 registers_pkg 0 22 Y^aczhMAL2dFW2hbgi>_80
 R5
 !i10b 1
-!s100 9FTF6SaBL;ni46ET7NMPm3
-I9cHF]?]XnAB[J`4R2m<0e1
+!s100 ;?[=`1b0L@4K4]gGCgHJa2
+IYcZ>3XiI^ZGbc4?@mlWgc3
 S1
 R1
-w1747249836
+w1747921828
 8../../../rtl/modul_studenta.sv
 F../../../rtl/modul_studenta.sv
-!i122 38
-L0 1 235
+!i122 99
+L0 1 408
 R7
 R8
 r1
@@ -185,18 +399,18 @@ R3
 R4
 R14
 DXx4 work 13 unit_test_pkg 0 22 3hzE8[bQE0nm;_1mIh<:R2
-R18
+R19
 R5
 !i10b 1
-!s100 bIoH;BB:8[Jd2`F3XQm==0
-ILZK;Q5z8B7nBO56iDPETW0
+!s100 ;]S?KG0I;C1oi98hjkMX_1
+Ig_gUDQHQ121QNmER70m:Y3
 S1
 R1
-w1747249807
+w1747922000
 8/prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv
 F/prj_bch/dseredyn/BCH-Verilog/tests/modul_studenta_unit_test/./modul_studenta_unit_test.sv
-!i122 38
-L0 5 309
+!i122 99
+L0 5 363
 R7
 R8
 r1
@@ -211,7 +425,7 @@ R12
 R13
 vregisters
 R2
-R18
+R19
 R5
 !i10b 1
 !s100 82NUI4_n]1jc_Qz``T_GI0
@@ -221,7 +435,7 @@ R1
 R15
 8../../../rdl/outputs/registers.sv
 F../../../rdl/outputs/registers.sv
-!i122 38
+!i122 99
 L0 4 323
 R7
 R8
@@ -246,7 +460,7 @@ R1
 R15
 8../../../rdl/outputs/registers_pkg.sv
 F../../../rdl/outputs/registers_pkg.sv
-!i122 38
+!i122 99
 R17
 VY^aczhMAL2dFW2hbgi>_80
 R8
@@ -282,7 +496,7 @@ F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testsuite.sv
 F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_testrunner.sv
 F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter_for_single_pattern.svh
 F/prj_bch/dseredyn/BCH-Verilog/tests/svunit/svunit_base/svunit_filter.svh
-!i122 38
+!i122 99
 L0 23 0
 V`8MJO<=8`6S64cR`3LQFF3
 R8
@@ -309,7 +523,7 @@ R1
 R6
 8.testrunner.sv
 F.testrunner.sv
-!i122 38
+!i122 99
 L0 5 59
 R7
 R8
@@ -337,7 +551,7 @@ R15
 8../../../axi4_lite/unit_test_pkg.sv
 F../../../axi4_lite/unit_test_pkg.sv
 F../../../axi4_lite/axi4_lite_driver_slave.svh
-!i122 38
+!i122 99
 L0 1 0
 V3hzE8[bQE0nm;_1mIh<:R2
 R8

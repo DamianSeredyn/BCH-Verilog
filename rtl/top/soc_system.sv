@@ -302,7 +302,9 @@ modul_studenta modul_studenta_u (
     .s_axil_rdata    ( s_axil_rdata   ),
     .s_axil_rresp    ( s_axil_rresp   ),
     .DebugTestSystem ( DEBUGTESTSYSTEM),
-    .LED             ( LED            )
+    .LED             ( LED            ),
+    .UART_RX         ( HPS_UART_RX    ),
+    .UART_TX         ( HPS_UART_TX    )
 );
 
 

@@ -61,6 +61,8 @@ module modul_studenta_unit_test;
     
     logic [ 7:0] LED;
     logic DEBUGTESTSYSTEM;
+    logic UART_TX;
+    logic UART_RX;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -136,7 +138,10 @@ module modul_studenta_unit_test;
         .s_axil_rresp    ( s_axil_rresp   ),
 
         .DebugTestSystem ( DEBUGTESTSYSTEM),
-        .LED             ( LED            )
+        .LED             ( LED            ),
+        .UART_RX         ( UART_RX        ),
+        .UART_TX         ( UART_TX        )
+        
     );
 
     typedef enum logic[2:0]{
@@ -277,7 +282,14 @@ endfunction
         
     `SVTEST_END
     
-
+        `SVTEST(rndTEST)
+            int i = 0;
+                 while (i < 10) begin
+                    @(posedge clk_100mhz);
+                        $display("Cykl %0d: wartosc sygnalu = %0h", i, dut.rnd);
+                    i++;
+                 end
+    `SVTEST_END
     `SVTEST(process_test)
 
 
@@ -299,6 +311,17 @@ endfunction
             transition_count++;
             $display("State transition %0d: %0s -> %0s [TIME = %0d]", transition_count,
                 appStateToString(prev_state), appStateToString(dut.state),i);
+            if(prev_state == dut.ENCODING_BCH)   begin
+                $display("Encdoded signal = %0b", dut.encoded_signal);
+            end
+            else if(prev_state == dut.GENERATE_NOISE) begin 
+                $display("Noised Signal = %0b", dut.encoded_signal);
+                $display("Noise = %0b", dut.data_out);
+            end
+            else if(prev_state == dut.GENERATE_ERRORS) begin 
+                $display("Noised Signal = %0b", dut.encoded_signal);
+                $display("Number of Errors = %0d", dut.numberOfGenerateErrors);
+            end
             prev_state = dut.state;
         end
     end
