@@ -1,5 +1,5 @@
 Questa Intel Starter FPGA Edition-64 vlog 2021.2 Compiler 2021.04 Apr 14 2021
-Start time: 17:01:26 on May 22,2025
+Start time: 18:13:41 on May 22,2025
 vlog -l compile.log -f .svunit.f 
 -- Compiling package junit_xml
 -- Compiling package svunit_pkg
@@ -12,6 +12,7 @@ vlog -l compile.log -f .svunit.f
 -- Importing package axi4_lite_pkg
 -- Compiling package unit_test_pkg
 -- Compiling module modul_studenta
+-- Compiling module UART_module
 -- Compiling module clock_div
 -- Compiling module gng
 -- Compiling module gng_ctg
@@ -27,8 +28,8 @@ vlog -l compile.log -f .svunit.f
 -- Compiling module testrunner
 
 Top level modules:
-	clock_div
+	UART_module
 	gng
 	testrunner
-End time: 17:01:26 on May 22,2025, Elapsed time: 0:00:00
+End time: 18:13:41 on May 22,2025, Elapsed time: 0:00:00
 Errors: 0, Warnings: 0

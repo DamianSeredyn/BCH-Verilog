@@ -68,12 +68,16 @@ logic BCH_decoded_finished = 1'b0;
   logic ena;
   
   // Random error generator
+  localparam WIDTH = 13;
   logic [7:0] current_iteration;
   logic [13:0] encoded_signal_mask =14'b0;
   logic [3:0] rand_idx;
-    localparam WIDTH = 13;
+  assign rand_idx = rnd[3:0];
 
-    assign rand_idx = rnd[3:0];
+  // UART
+    logic clk_u;
+    logic[7:0] RX_buff = 8'b0;
+    logic[7:0] TX_buff = 8'b0;
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -98,6 +102,17 @@ gng_ctg #(
         .data_out(data_out)
     );
 
+     // Clock divier - do Uarta
+
+    clock_div #(
+    .N(5208)
+    )cld_div (
+        .clk_i(clk),
+        .rst_i(rst),
+        .clk_o(clk_u)
+    );
+
+
 typedef enum logic[2:0]{
 	IDLE = 3'h0,
 	ENCODING_BCH = 3'h1,
@@ -106,9 +121,7 @@ typedef enum logic[2:0]{
 	DECODING_BCH = 3'h4,
     FINISHED = 3'h5 
 } appState;
-
 appState state;
-
 
 always_ff @(posedge clk or posedge rst)
 begin
