@@ -251,9 +251,9 @@ endfunction
 
     
     `SVTEST(encoding_bch_test)
-        logic [7:0] signal_input = 8'b10101010;
-        logic [5:0] generator_signal = 6'b100101; 
-        logic [14:0] expected_encoded_signal = signal_input * generator_signal; 
+        logic [6:0] signal_input = 7'b0010011;
+        logic [6:0] generator_signal = 9'b111010001; //DO NOT TOUCH
+        logic [15:0] expected_encoded_signal = 16'b1111101100011; //Jak chce zmienić policz to sobie na kartce (signal * gen) i xorujesz wyniki
         int wait_cycles = 0;
        
         dut.state = dut.ENCODING_BCH;
@@ -332,11 +332,11 @@ endfunction
 
 
     `SVTEST(syndrome_coding_bch_test)
-        logic [104:0] signal_input = 104'b1110101101011;
+        logic [104:0] signal_input = 104'b1111101100011;
         int wait_cycles = 0;
 
-        dut.syndrome_coding = signal_input;
-
+        //dut.syndrome_coding = signal_input;
+        $display("Input signal = %0b", dut.syndrome_coding);
         dut.state = dut.DECODING_BCH;
 
         while (dut.BCH_encoded_finished !== 1'b1) 
@@ -350,10 +350,26 @@ endfunction
             end
         end
         $display("state of BCH_decoded = %0b", dut.BCH_decoded_finished);
-        $display("Input signal = %0b", dut.syndrome_coding);
         $display("syndrome decoding result = %0b", dut.decoded_syndrome[0], "  %0b",dut.decoded_syndrome[1],
         "  %0b",dut.decoded_syndrome[2],"  %0b",dut.decoded_syndrome[3],"  %0b",dut.decoded_syndrome[4],
         "  %0b",dut.decoded_syndrome[5],"  %0b",dut.decoded_syndrome[6],"  %0b",dut.decoded_syndrome[7]);
+        $display("\n");
+        for (int i = 0; i < 4 ; i++ ) begin
+            $display("Row number = %0d", i);
+            for (int j = 0; j < 4 ;j++ ) begin
+                $display("Syndrome matrix 1 = %0b", dut.test_variable1[i][j]);
+            end
+        end
+        $display("\n");
+        for (int i = 0; i < 4 ; i++ ) begin
+            $display("Syndrome matrix2 = %0b", dut.test_variable2[i]);
+        end
+        $display("\n");
+        $display("second matrix sum = %0b", dut.test_variable3);
+        $display("\n");
+        $display("signal output = %0b", dut.decoded_signal);
+        $display("\n");
+        $display("final correcting capability = %0b", dut.correcting_capability);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[0], 2'b10);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);
@@ -361,6 +377,7 @@ endfunction
         `FAIL_UNLESS_EQUAL(dut.BCH_decoded_finished, 1'b1);  
         
     `SVTEST_END
+    
 
 `SVUNIT_TESTS_END
 
