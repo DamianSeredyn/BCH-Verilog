@@ -42,10 +42,10 @@ logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [4:0] signal_input = 5'b10011; //temp value for testing max 7 bits
 // generator dla max 2 błędów 9'b111010001. Możemy przesłać max 7 bitów
 // generator dla max 3 błędów 11'b10100110111 // Możemy przesłać maksymalnie 5 bitów
-logic [10:0] generator_signal = 11'b10100110111; //DO NOT TOUCH
+logic [10:0] generator_signal = 11'b10100111111; //DO NOT TOUCH
 // dodać funkcję która po przesłaniu danych będzie zerować te wszystkie poniższe zmienne
 logic [15:0] encoded_signal = 16'b0;
-logic [104:0] syndrome_coding = 104'b101110000101001; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
 logic [104:0] error_correction [3:0];
@@ -261,7 +261,6 @@ begin
     if(rst == 1'b1)
         begin
             BCH_decoded_finished <= 1'b0;
-            syndrome_coding <= 105'b101110000111111;
             correcting_capability <= 3;
             decoded_signal <= 105'b0;
             lower_correcting_capability <= 1'b0;
@@ -290,14 +289,14 @@ begin
             
 
                 decoded_signal = syndrome_coding;
-                for (logic [3:0] k = 0;k < 2 ;k++ ) begin
+                for (logic [3:0] k = 0;k < 3 ;k++ ) begin
                     if (error_correction[k] !== 105'bx)
                     decoded_signal = decoded_signal ^ error_correction[k];
                 end
                 if (error_correction[0] === 105'bx)begin
                    // dodać jakąś flagę, że mamy więcej błędów niż kodowanie przewiduje 
                 end
-                BCH_decoded_finished <= 1'b1;
+                BCH_decoded_finished = 1'b1;
             end
         end
 end
@@ -329,8 +328,8 @@ begin
     second_matrix_sum[3] = 105'b0;
 
     //create matrix
-    for (i = 0; i < size ; i++ ) begin
-        for (j = 0; j < size ; j++ ) begin
+    for (i = 0; i < 4 ; i++ ) begin //changed size to 4
+        for (j = 0; j < 4 ; j++ ) begin //changed size to 4
            first_matrix[i][j] = decoded_syndrome2[j+i]; 
         end
         second_matrix[i] = decoded_syndrome2[size+i];
@@ -341,8 +340,8 @@ begin
     //powyżej tego momentu wszystko na pewno działa a poniżej działa dla równo 2 błędów. Nad wyzwoleniem matrix napisałem co trzeba jako tako zrobić
     minor(first_matrix,size,first_matrix); // To raczej trzeba zmodyfikować by działało dla 3 i 4 błędów
 
-    for (i = 0; i < size ; i++ ) begin
-        for (j = 0; j < size ; j++ ) begin
+    for (i = 0; i < 4 ; i++ ) begin //changed size to 4
+        for (j = 0; j < 4 ; j++ ) begin //changed size to 4
             first_matrix[i][j] = first_matrix[i][j] * (16'b1000000000000000/first_matrix_sum); // wymnożenie przez determinante
             second_matrix_sum[i] = second_matrix_sum[i] ^ second_matrix[j]*first_matrix[i][j]; // wymnożenie przez 2 macierz
         end
@@ -372,13 +371,10 @@ output [104:0] where_errors [3:0];
 logic [104:0] second_matrix_sum2 [3:0];
 logic [104:0] possible_values [15:0];
 logic [104:0] value_holder;
-logic [5:0] i;
-logic [5:0] j;
-logic [5:0] k;
 begin
     second_matrix_sum2 = second_matrix_sum;
     //tworzenie wartości kolejnych zmiennych
-    for (i = 6'b0; i < 16; i++)
+    for (logic [5:0] i = 6'b0; i < 16; i++)
     begin
         if (i == 0) possible_values[i] = 16'b10;
         else
@@ -387,9 +383,9 @@ begin
 
     //Dla 2 błędów mnożymy 2 możliwe wartości i muszą wyjść second_matrix_sum2[0] i po ich skróceniu muszą być równe second_matrix_sum2[1]. Jest to pokazane w filmiku pod koniec
     if (size == 2)begin
-        for (j = 0; j < 16; j++) 
+        for (logic [5:0] j = 0; j < 16; j++) 
         begin
-            for (i = 0; i < 16; i++)
+            for (logic [5:0] i = 0; i < 16; i++)
             begin
                 if ((possible_values[i] * possible_values[j]) == second_matrix_sum2[0]) begin
                     syndromes((possible_values[i] ^ possible_values[j]),value_holder);
@@ -402,9 +398,9 @@ begin
             end
         end
     end else if(size == 3)begin
-        for (j = 0; j < 16; j++) begin
-            for (i = 0; i < 16; i++)begin
-                for (k = 0; k < 16;k++ ) begin
+        for (logic [5:0] j = 0; j < 16; j++) begin
+            for (logic [5:0] i = 0; i < 16; i++)begin
+                for (logic [5:0] k = 0; k < 16;k++ ) begin
                     if ((possible_values[i] * possible_values[j] * possible_values[k]) == second_matrix_sum2[0]) begin
                         syndromes((possible_values[i] ^ possible_values[j] ^ possible_values[k]),value_holder);
                         if (value_holder == second_matrix_sum2[2]) begin
@@ -428,11 +424,9 @@ input [104:0] first_matrix [3:0][3:0];
 input [4:0] size;
 output [104:0] first_matrix_out [3:0][3:0];
 logic [104:0] first_matrix2[3:0][3:0];
-logic [4:0] i;
-logic [4:0] j;
 begin
-    for (i = 0; i < size ; i++ ) begin
-        for (j = 0; j < size ; j++ ) begin
+    for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
+        for (logic [4:0] j = 0; j < 4 ; j++ ) begin// changed size to 4
             first_matrix2[i][j] = 105'b0;
         end
     end
@@ -455,8 +449,8 @@ begin
         first_matrix2[2][0] = (first_matrix[0][1] * first_matrix[1][2]) ^ (first_matrix[0][2] * first_matrix[1][1]);
         first_matrix2[2][1] = (first_matrix[0][0] * first_matrix[1][2]) ^ (first_matrix[0][2] * first_matrix[1][0]);
         first_matrix2[2][2] = (first_matrix[0][0] * first_matrix[1][1]) ^ (first_matrix[0][1] * first_matrix[1][0]);
-        for (i = 0; i < size ; i++ ) begin
-            for (j = 0; j < size ; j++ ) begin
+    for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
+        for (logic [4:0] j = 0; j < 4 ; j++ ) begin// changed size to 4
                 syndromes(first_matrix2[i][j],first_matrix2[i][j]);
             end
         end
@@ -554,13 +548,14 @@ task decode_syndromes;
     logic [104:0] input_data;
     begin
         input_data = 105'b0;
-        for ( loop = 1; loop <= syndrome_number; loop++)
+        for ( loop = 1; loop <= 8; loop++) // changed size(syndrome_number) to 8
         begin
-            for (integer i = 0; i < 105; i++)
+            for (integer i = 0; i < 20; i++)
             begin
-                if (data[i])
+                if (data[i] && i*loop < 105)
                 input_data[i*loop] = 1'b1;
             end
+            if(loop < 10 && loop > 0)
             syndromes(input_data, decoded_syndrome[loop-1]);
             input_data = 105'b0;
         end
@@ -568,8 +563,6 @@ task decode_syndromes;
 endtask
 
 task syndromes;
-    logic [9:0] i;
-    logic [4:0] j;
     logic [104:0] data;
     logic [15:0] data_2;
     input [104:0] data_i;
@@ -577,9 +570,9 @@ task syndromes;
     begin
         data = data_i;
         data_2 = 105'b0;
-        for (j = 0; j < 8; j++)
+        for (logic [4:0] j = 0; j < 8; j++)
         begin
-            for (i = 16; i < 105; i++)
+            for (logic [9:0] i = 16; i < 105; i++)
             begin
                 if (data[i])
                 begin
@@ -643,10 +636,9 @@ function [15:0] encode_bch;
     input [4:0] px;
     input [10:0] gx;
     logic [15:0] result;
-    logic [5:0] i;
     begin
         result = 16'b0;
-        for (i = 0; i < 7; i++) begin
+        for (logic [5:0] i = 0; i < 5; i++) begin
             if (px[i])
                 result = result ^ (gx << i);
         end
