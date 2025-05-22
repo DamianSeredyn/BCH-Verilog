@@ -36,13 +36,17 @@ logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [6:0] signal_input = 7'b0010011; //temp value for testing max 7 bits
+// generator dla max 2 błędów 9'b111010001. Możemy przesłać max 7 bitów
+// generator dla max 3 błędów 11'b10100110111 // Możemy przesłać maksymalnie 5 bitów
 logic [8:0] generator_signal = 9'b111010001; //DO NOT TOUCH
-logic [15:0] encoded_signal =14'b0;
-logic [104:0] syndrome_coding = 104'b1111101101111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+// dodać funkcję która po przesłaniu danych będzie zerować te wszystkie poniższe zmienne
+logic [15:0] encoded_signal = 16'b0;
+logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
-logic [4:0] correcting_capability = 2;//Number of errors that decoding can correct. MAX = 4
+logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
 logic [104:0] error_correction [3:0];
 logic [104:0] decoded_signal = 105'b0; // final decoded signal
+logic lower_correcting_capability = 1'b0;
 // transmition signals
 logic transmition_Finished = 1'b0;
 
@@ -187,17 +191,27 @@ begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
                 decode_syndromes(correcting_capability*2,syndrome_coding);
-                // narazie działa dla 0,1,2 błędów
+                // narazie działa dla 0,1,2,3 błędów
                 if (decoded_syndrome[0] != 0)begin
                 matrix(decoded_syndrome, correcting_capability, error_correction);
                 end
+
+                if (decoded_syndrome[0] != 0 && lower_correcting_capability == 1'b1)begin
+                    correcting_capability = 2;
+                    matrix(decoded_syndrome, correcting_capability, error_correction);
+                end
+            
+
                 decoded_signal = syndrome_coding;
                 for (logic [3:0] k = 0;k < 2 ;k++ ) begin
                     if (error_correction[k] !== 105'bx)
                     decoded_signal = decoded_signal ^ error_correction[k];
                 end
+                if (error_correction[0] === 105'bx)begin
+                    
+                end
+                // dodać jakąś flagę, że mamy więcej błędów niż kodowanie przewiduje
                 BCH_decoded_finished <= 1'b1;
-
             end
         end
 end
@@ -252,8 +266,10 @@ begin
 
     if(size == 2 && first_matrix[0][0] === 105'bx)
         where_errors[0] = decoded_syndrome[0]; // tylko dla 1 błędu
-    else
-        error_place(second_matrix_sum,size,where_errors); // znalezienie na których miejscach są błędy
+    else if (size == 3 && first_matrix[0][0] === 105'bx) begin
+        lower_correcting_capability = 1'b1;
+    end
+    else error_place(second_matrix_sum,size,where_errors); // znalezienie na których miejscach są błędy
 
     data_o = where_errors;
 
@@ -272,6 +288,7 @@ logic [104:0] possible_values [15:0];
 logic [104:0] value_holder;
 logic [5:0] i;
 logic [5:0] j;
+logic [5:0] k;
 begin
     second_matrix_sum2 = second_matrix_sum;
     //tworzenie wartości kolejnych zmiennych
@@ -283,16 +300,36 @@ begin
     end
 
     //Dla 2 błędów mnożymy 2 możliwe wartości i muszą wyjść second_matrix_sum2[0] i po ich skróceniu muszą być równe second_matrix_sum2[1]. Jest to pokazane w filmiku pod koniec
-    for (j = 0; j < 16; j++) 
-    begin
-        for (i = 0; i < 16; i++)
+    if (size == 2)begin
+        for (j = 0; j < 16; j++) 
         begin
-            if ((possible_values[i] * possible_values[j]) == second_matrix_sum2[0]) begin
-                syndromes((possible_values[i] ^ possible_values[j]),value_holder);
-                if (value_holder == second_matrix_sum2[1]) begin
-                    where_errors[0] = possible_values[i];
-                    where_errors[1] = possible_values[j];
-                    break;
+            for (i = 0; i < 16; i++)
+            begin
+                if ((possible_values[i] * possible_values[j]) == second_matrix_sum2[0]) begin
+                    syndromes((possible_values[i] ^ possible_values[j]),value_holder);
+                    if (value_holder == second_matrix_sum2[1]) begin
+                        where_errors[0] = possible_values[i];
+                        where_errors[1] = possible_values[j];
+                        break;
+                    end
+                end
+            end
+        end
+    end else if(size == 3)begin
+        for (j = 0; j < 16; j++) begin
+            for (i = 0; i < 16; i++)begin
+                for (k = 0; k < 16;k++ ) begin
+                    if ((possible_values[i] * possible_values[j] * possible_values[k]) == second_matrix_sum2[0]) begin
+                        syndromes((possible_values[i] ^ possible_values[j] ^ possible_values[k]),value_holder);
+                        if (value_holder == second_matrix_sum2[2]) begin
+                           syndromes(((possible_values[i] * possible_values[j]) ^ (possible_values[i] * possible_values[k]) ^ (possible_values[j] * possible_values[k])),value_holder);
+                           if (value_holder == second_matrix_sum2[1]) begin
+                                where_errors[0] = possible_values[i];
+                                where_errors[1] = possible_values[j];
+                                where_errors[2] = possible_values[k];
+                           end 
+                        end
+                    end
                 end
             end
         end
@@ -323,13 +360,25 @@ begin
         first_matrix2[0][1] = first_matrix[1][0];
         first_matrix2[1][0] = first_matrix[0][1]; 
     end else if (size == 3) begin
+        //pierwszy wiersz
+        first_matrix2[0][0] = (first_matrix[1][1] * first_matrix[2][2]) ^ (first_matrix[1][2] * first_matrix[2][1]);
+        first_matrix2[0][1] = (first_matrix[1][0] * first_matrix[2][2]) ^ (first_matrix[1][2] * first_matrix[2][0]);
+        first_matrix2[0][2] = (first_matrix[1][0] * first_matrix[2][1]) ^ (first_matrix[1][1] * first_matrix[2][0]);
+        //drugi wiersz
+        first_matrix2[1][0] = (first_matrix[0][1] * first_matrix[2][2]) ^ (first_matrix[0][2] * first_matrix[2][1]);
+        first_matrix2[1][1] = (first_matrix[0][0] * first_matrix[2][2]) ^ (first_matrix[0][2] * first_matrix[2][0]);
+        first_matrix2[1][2] = (first_matrix[0][0] * first_matrix[2][1]) ^ (first_matrix[0][1] * first_matrix[2][0]);
+        //trzeci wiersz
+        first_matrix2[2][0] = (first_matrix[0][1] * first_matrix[1][2]) ^ (first_matrix[0][2] * first_matrix[1][1]);
+        first_matrix2[2][1] = (first_matrix[0][0] * first_matrix[1][2]) ^ (first_matrix[0][2] * first_matrix[1][0]);
+        first_matrix2[2][2] = (first_matrix[0][0] * first_matrix[1][1]) ^ (first_matrix[0][1] * first_matrix[1][0]);
         for (i = 0; i < size ; i++ ) begin
             for (j = 0; j < size ; j++ ) begin
-                // do zrobienia
+                syndromes(first_matrix2[i][j],first_matrix2[i][j]);
             end
         end
     end else if (size == 4) begin
-       // do zrobienia
+       //first_matrix2[0][0] = ()^()^()^()^()^();
     end
     first_matrix_out = first_matrix2;
 end

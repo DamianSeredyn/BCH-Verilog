@@ -345,6 +345,8 @@ endfunction
         $display("second matrix sum = %0b", dut.test_variable3);
         $display("\n");
         $display("signal output = %0b", dut.decoded_signal);
+        $display("\n");
+        $display("final correcting capability = %0b", dut.correcting_capability);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[0], 2'b10);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);
