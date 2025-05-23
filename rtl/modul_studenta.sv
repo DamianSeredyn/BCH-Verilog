@@ -25,8 +25,8 @@ module modul_studenta (
     output logic [7:0]  LED,
     input  logic        DebugTestSystem,
 
-    input  wire  UART_RX,
-    output logic UART_TX
+    input    wire  UART_RX,
+    output  logic UART_TX
 
 );
 
@@ -76,8 +76,9 @@ logic BCH_decoded_finished = 1'b0;
 
   // UART
     logic clk_u;
-    logic[7:0] RX_buff = 8'b0;
+    wire[47:0] RX_buff;
     logic[7:0] TX_buff = 8'b0;
+    wire dataReady;
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -105,11 +106,23 @@ gng_ctg #(
      // Clock divier - do Uarta
 
     clock_div #(
-    .N(5208)
+    .N(5209)
     )cld_div (
         .clk_i(clk),
         .rst_i(rst),
         .clk_o(clk_u)
+    );
+
+    UART_module uart_module
+    (
+        .clk_i(clk),
+        .rst_i(rst),
+        .clk_N(clk_u),
+        .UART_RX(UART_RX),
+        .UART_TX(UART_TX),
+        .TX_buff(TX_buff),
+        .RX_buff(RX_buff),
+        .Data_Ready(dataReady)
     );
 
 
@@ -125,24 +138,38 @@ appState state;
 
 always_ff @(posedge clk or posedge rst)
 begin
+    if (rst== 1'b1) begin
+        LED <= 8'b0;
+    end
+    else begin
+        if(dataReady == 1'b1) begin
+            if(RX_buff[47:40] == 8'b0000_0001) begin
+                LED <= 8'b0000_0001;
+            end
+        end
+    end
+end
+
+always_ff @(posedge clk or posedge rst)
+begin
     	if (rst == 1'b1) 
         begin
-                BCH_coding <= 1'b0;
-                generateNoise <= 1'b0;
-                transmition_Finished <= 1'b0;
-                BCH_startErrorGen_finished <= 1'b0;
-                BCH_decoded_finished <= 1'b0;
+                //BCH_coding <= 1'b0;
+                //generateNoise <= 1'b0;
+                //transmition_Finished <= 1'b0;
+                //BCH_startErrorGen_finished <= 1'b0;
+                //BCH_decoded_finished <= 1'b0;
 	    end 
         else
         begin
             if (DebugTestSystem == 1'b1)
             begin
-                BCH_coding <= 1'b1;
+                //BCH_coding <= 1'b1;
                 
-                generateNoise <= 1'b0;
-                randomGenerateErrors <= 1'b1;
+                //generateNoise <= 1'b0;
+                //randomGenerateErrors <= 1'b1;
 
-                transmition_Finished <= 1'b1;
+                //transmition_Finished <= 1'b1;
 
                 if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
                     begin
@@ -289,15 +316,15 @@ task decode_syndromes;
     logic [3:0] loop;
     logic [104:0] input_data;
     begin
-        input_data = 104'b0;
-        for ( loop = 1; loop <= syndrome_number; loop++)
+        input_data = 104'b0;    
+        for ( loop = 1; loop <= 1; loop++)
         begin
-            for (integer i = 0; i < 104; i++)
+            for (integer i = 0; i < 1; i++)
             begin
-                if (data[i])
-                input_data[i*loop] = 1'b1;
+             //   if (data[i])
+              //  input_data[i*loop] = 1'b1;
             end
-            syndromes(input_data, decoded_syndrome[loop-1]);
+            //syndromes(input_data, decoded_syndrome[loop-1]);
             input_data = 104'b0;
         end
     end

@@ -304,7 +304,7 @@ modul_studenta modul_studenta_u (
     .DebugTestSystem ( DEBUGTESTSYSTEM),
     .LED             ( LED            ),
     .UART_RX         ( HPS_UART_RX    ),
-    .UART_TX         ( HPS_UART_TX    )
+    .UART_TX         ( DEBUGTESTSYSTEM)
 );
 
 
