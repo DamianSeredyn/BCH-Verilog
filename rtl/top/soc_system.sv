@@ -6,7 +6,15 @@ module soc_system (
       input       [1:0]  KEY,
       output      [7:0]  LED,
       input              DEBUGTESTSYSTEM,
-
+    input   [7:0] DataIN,
+    output  [7:0] DataOUT,
+    input   BCH,
+    input   FS,
+    input Gauss,
+    input   BER,
+    input   [7:0] density,
+    input   [7:0] BERGen,
+    input DataReady,
       inout              HPS_CONV_USB_N,
       output      [14:0] HPS_DDR3_ADDR,
       output      [2:0]  HPS_DDR3_BA,
@@ -303,8 +311,15 @@ modul_studenta modul_studenta_u (
     .s_axil_rresp    ( s_axil_rresp   ),
     .DebugTestSystem ( DEBUGTESTSYSTEM),
     .LED             ( LED            ),
-    .UART_RX         ( HPS_UART_RX    ),
-    .UART_TX         ( HPS_UART_TX    )
+    .DataIN          ( DataIN         ),
+    .DataOUT         ( DataOUT        ),
+    .BCH             ( BCH            ),
+    .Gauss            ( Gauss         ),
+    .FS              ( FS             ),
+    .BER             ( BER            ),
+    .density         ( density        ),
+    .BERGen          ( BERGen         ),
+    .DataReady       ( DataReady      )
 );
 
 

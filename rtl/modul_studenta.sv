@@ -23,11 +23,19 @@ module modul_studenta (
     output logic [1:0]  s_axil_rresp,
 
     output logic [7:0]  LED,
-    input  logic        DebugTestSystem,
 
-    input  wire  UART_RX,
-    output logic UART_TX
+    input logic DebugTestSystem,
+    input  logic [7:0] DataIN,
+    output logic [7:0] DataOUT,
+    input  logic BCH,
+    input  logic Gauss,
+    input  logic FS,
+    input  logic BER,
+    input  logic [7:0] density,
+    input  logic [7:0] BERGen,
 
+    input logic DataReady,
+    output logic DataOutputReady
 );
 
 import registers_pkg::*;
@@ -39,6 +47,11 @@ logic BCH_coding = 1'b0;
 logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
+logic [7:0] densityPar = 8'b0;
+logic transmition_Finished = 1'b0;
+
+
+// BCH THINNNNNNNNNNGSSSSSSSSSSSSSSSSSSSSSSS!
 logic [4:0] signal_input = 5'b10011; //temp value for testing max 7 bits
 // generator dla max 2 błędów 9'b111010001. Możemy przesłać max 7 bitów
 // generator dla max 3 błędów 11'b10100110111 // Możemy przesłać maksymalnie 5 bitów
@@ -51,8 +64,6 @@ logic [4:0] correcting_capability = 3;//Number of errors that decoding can corre
 logic [104:0] error_correction [3:0];
 logic [104:0] decoded_signal = 105'b0; // final decoded signal
 logic lower_correcting_capability = 1'b0;
-// transmition signals
-logic transmition_Finished = 1'b0;
 
 
 // flags ending
@@ -70,12 +81,14 @@ logic BCH_decoded_finished = 1'b0;
   logic ena;
   
   // Random error generator
+  localparam WIDTH = 13;
   logic [7:0] current_iteration;
   logic [13:0] encoded_signal_mask =14'b0;
   logic [3:0] rand_idx;
-    localparam WIDTH = 13;
+  assign rand_idx = rnd[3:0];
 
-    assign rand_idx = rnd[3:0];
+  // Handle data
+  logic prevDataReady;
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -100,6 +113,19 @@ gng_ctg #(
         .data_out(data_out)
     );
 
+     // Clock divier - do Uarta
+
+    clock_div #(
+    .N(1000)
+    )cld_div (
+        .clk_i(clk),
+        .rst_i(rst),
+        .clk_o(clk_u)
+    );
+
+
+
+
 typedef enum logic[2:0]{
 	IDLE = 3'h0,
 	ENCODING_BCH = 3'h1,
@@ -108,10 +134,51 @@ typedef enum logic[2:0]{
 	DECODING_BCH = 3'h4,
     FINISHED = 3'h5 
 } appState;
-
 appState state;
 
+always_ff @(posedge clk or posedge rst)
+begin
+    	if (rst == 1'b1) 
+        begin
+            prevDataReady <= 1'b0;
+            BCH_coding <= 1'b0;
+            generateNoise <= 1'b0;
+            randomGenerateErrors <= 1'b0;
+            numberOfGenerateErrors <= 8'b0;  
+            densityPar <= 8'b0;
+            transmition_Finished <= 1'b0;
+            signal_input <= 8'b0;
+	    end 
+        else if(DataOutputReady == 1'b1) begin
+            transmition_Finished <= 1'b0;
+        end
+        else 
+        begin
+            if(DataReady == 1'b1 &&  prevDataReady == 1'b0) begin
+                BCH_coding <= BCH;
+                generateNoise <= Gauss;
+                randomGenerateErrors <= BER;
+                numberOfGenerateErrors <= BERGen;  
+                densityPar <= density;
+                transmition_Finished <= 1'b1;
+                signal_input <= DataIN;
 
+                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
+                    begin
+                        ena <= 1'b1;    
+                    end
+                else
+                    begin
+                        ena <= 1'b0;    
+                    end         
+            end
+            prevDataReady <= DataReady;
+        end
+end 
+        
+
+/*
+TESTING PROCESS!
 always_ff @(posedge clk or posedge rst)
 begin
     	if (rst == 1'b1) 
@@ -153,13 +220,16 @@ begin
         end
 
 end
-
+*/
 always_ff @(posedge clk or posedge rst)
 begin
 	if (rst == 1'b1) 
     begin
         state <= IDLE;
-	end 
+	end
+     else if(transmition_Finished == 1'b0) begin
+             state <= IDLE;
+    end   
     else begin
 		if (transmition_Finished == 1'b1) 
         begin
@@ -199,6 +269,9 @@ begin
             BCH_encoded_finished <= 1'b0;
             encoded_signal <= 16'b0;
         end
+     else if(transmition_Finished == 1'b0) begin
+            BCH_encoded_finished <= 1'b0;
+    end          
     else
         begin
         if (state == ENCODING_BCH && BCH_encoded_finished == 1'b0)
@@ -216,6 +289,9 @@ begin
         begin
             BCH_startNoise_finished <= 1'b0;
         end
+     else if(transmition_Finished == 1'b0) begin
+            BCH_startNoise_finished <= 1'b0;
+    end   
     else
         begin
             if(state == GENERATE_NOISE && BCH_startNoise_finished == 1'b0)
@@ -239,6 +315,11 @@ begin
             current_iteration <= 0;
             encoded_signal_mask <= 0;
         end
+     else if(transmition_Finished == 1'b0) begin
+            BCH_startErrorGen_finished <= 1'b0;
+            current_iteration <= 0;
+            encoded_signal_mask <= 0;
+    end   
     else
         begin
             if(state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0)
@@ -273,6 +354,9 @@ begin
                 decoded_syndrome[i] <= 105'b0;
             end
         end
+    else if(transmition_Finished == 1'b0) begin
+        BCH_decoded_finished <= 1'b0;
+    end
     else
         begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
@@ -547,6 +631,26 @@ begin
 end
 endfunction
 
+
+always_ff @(posedge clk or posedge rst)
+begin
+    if(rst == 1'b1)
+        begin
+             DataOutputReady <= 1'b0;
+        end
+    else if(transmition_Finished == 1'b0) begin
+        DataOutputReady <= 1'b0;
+    end
+    else
+        begin
+            if(state == FINISHED && DataOutputReady == 1'b0)
+            begin
+                
+                DataOutputReady <= 1'b1;
+            end
+        end
+end
+
 task decode_syndromes;
     input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
     input [104:0] data;
@@ -558,8 +662,8 @@ task decode_syndromes;
         begin
             for (integer i = 0; i < 105; i++)
             begin
-                if (data[i])
-                input_data[i*loop] = 1'b1;
+             if (data[i])
+              input_data[i*loop] = 1'b1;
             end
             syndromes(input_data, decoded_syndrome[loop-1]);
             input_data = 105'b0;
