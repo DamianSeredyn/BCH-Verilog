@@ -63,7 +63,15 @@ set_global_assignment -name VERILOG_MACRO FSM_DEBUG
 
 
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/modul_studenta.sv
-
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Uart_module.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/clock_div.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_ctg.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_coef.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_interp.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_lzd.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_smul_16_18_sadd_37.v
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_smul_16_18.v
 
 set_global_assignment -name SYSTEMVERILOG_FILE ../rdl/outputs/registers_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rdl/outputs/registers.sv

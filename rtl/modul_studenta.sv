@@ -23,11 +23,19 @@ module modul_studenta (
     output logic [1:0]  s_axil_rresp,
 
     output logic [7:0]  LED,
-    input  logic        DebugTestSystem,
 
-    input    wire  UART_RX,
-    output  logic UART_TX
+    input logic DebugTestSystem,
+    input  logic [7:0] DataIN,
+    output logic [7:0] DataOUT,
+    input  logic BCH,
+    input  logic Gauss,
+    input  logic FS,
+    input  logic BER,
+    input  logic [7:0] density,
+    input  logic [7:0] BERGen,
 
+    input logic DataReady,
+    output logic DataOutputReady
 );
 
 import registers_pkg::*;
@@ -39,6 +47,7 @@ logic BCH_coding = 1'b0;
 logic generateNoise = 1'b0;
 logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
+logic [7:0] densityPar = 8'b0;
 logic transmition_Finished = 1'b0;
 
 
@@ -74,11 +83,8 @@ logic BCH_decoded_finished = 1'b0;
   logic [3:0] rand_idx;
   assign rand_idx = rnd[3:0];
 
-  // UART
-    logic clk_u;
-    wire[47:0] RX_buff;
-    logic[7:0] TX_buff = 8'b0;
-    wire dataReady;
+  // Handle data
+  logic prevDataReady;
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -106,24 +112,14 @@ gng_ctg #(
      // Clock divier - do Uarta
 
     clock_div #(
-    .N(5209)
+    .N(1000)
     )cld_div (
         .clk_i(clk),
         .rst_i(rst),
         .clk_o(clk_u)
     );
 
-    UART_module uart_module
-    (
-        .clk_i(clk),
-        .rst_i(rst),
-        .clk_N(clk_u),
-        .UART_RX(UART_RX),
-        .UART_TX(UART_TX),
-        .TX_buff(TX_buff),
-        .RX_buff(RX_buff),
-        .Data_Ready(dataReady)
-    );
+
 
 
 typedef enum logic[2:0]{
@@ -138,38 +134,67 @@ appState state;
 
 always_ff @(posedge clk or posedge rst)
 begin
-    if (rst== 1'b1) begin
-        LED <= 8'b0;
-    end
-    else begin
-        if(dataReady == 1'b1) begin
-            if(RX_buff[47:40] == 8'b0000_0001) begin
-                LED <= 8'b0000_0001;
-            end
+    	if (rst == 1'b1) 
+        begin
+            prevDataReady <= 1'b0;
+            BCH_coding <= 1'b0;
+            generateNoise <= 1'b0;
+            randomGenerateErrors <= 1'b0;
+            numberOfGenerateErrors <= 8'b0;  
+            densityPar <= 8'b0;
+            transmition_Finished <= 1'b0;
+            signal_input <= 8'b0;
+	    end 
+        else if(DataOutputReady == 1'b1) begin
+            transmition_Finished <= 1'b0;
         end
-    end
-end
+        else 
+        begin
+            if(DataReady == 1'b1 &&  prevDataReady == 1'b0) begin
+                BCH_coding <= BCH;
+                generateNoise <= Gauss;
+                randomGenerateErrors <= BER;
+                numberOfGenerateErrors <= BERGen;  
+                densityPar <= density;
+                transmition_Finished <= 1'b1;
+                signal_input <= DataIN;
 
+                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
+                    begin
+                        ena <= 1'b1;    
+                    end
+                else
+                    begin
+                        ena <= 1'b0;    
+                    end         
+            end
+            prevDataReady <= DataReady;
+        end
+end 
+        
+
+/*
+TESTING PROCESS!
 always_ff @(posedge clk or posedge rst)
 begin
     	if (rst == 1'b1) 
         begin
-                //BCH_coding <= 1'b0;
-                //generateNoise <= 1'b0;
-                //transmition_Finished <= 1'b0;
-                //BCH_startErrorGen_finished <= 1'b0;
-                //BCH_decoded_finished <= 1'b0;
+                BCH_coding <= 1'b0;
+                generateNoise <= 1'b0;
+                transmition_Finished <= 1'b0;
+                BCH_startErrorGen_finished <= 1'b0;
+                BCH_decoded_finished <= 1'b0;
 	    end 
         else
         begin
             if (DebugTestSystem == 1'b1)
             begin
-                //BCH_coding <= 1'b1;
+                BCH_coding <= 1'b1;
                 
-                //generateNoise <= 1'b0;
-                //randomGenerateErrors <= 1'b1;
+                generateNoise <= 1'b0;
+                randomGenerateErrors <= 1'b1;
 
-                //transmition_Finished <= 1'b1;
+                transmition_Finished <= 1'b1;
 
                 if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
                     begin
@@ -191,13 +216,16 @@ begin
         end
 
 end
-
+*/
 always_ff @(posedge clk or posedge rst)
 begin
 	if (rst == 1'b1) 
     begin
         state <= IDLE;
-	end 
+	end
+     else if(transmition_Finished == 1'b0) begin
+             state <= IDLE;
+    end   
     else begin
 		if (transmition_Finished == 1'b1) 
         begin
@@ -236,6 +264,9 @@ begin
         begin
             BCH_encoded_finished <= 1'b0;
         end
+     else if(transmition_Finished == 1'b0) begin
+            BCH_encoded_finished <= 1'b0;
+    end          
     else
         begin
         if (state == ENCODING_BCH && BCH_encoded_finished == 1'b0)
@@ -253,6 +284,9 @@ begin
         begin
             BCH_startNoise_finished <= 1'b0;
         end
+     else if(transmition_Finished == 1'b0) begin
+            BCH_startNoise_finished <= 1'b0;
+    end   
     else
         begin
             if(state == GENERATE_NOISE && BCH_startNoise_finished == 1'b0)
@@ -276,6 +310,11 @@ begin
             current_iteration <= 0;
             encoded_signal_mask <= 0;
         end
+     else if(transmition_Finished == 1'b0) begin
+            BCH_startErrorGen_finished <= 1'b0;
+            current_iteration <= 0;
+            encoded_signal_mask <= 0;
+    end   
     else
         begin
             if(state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0)
@@ -299,6 +338,9 @@ begin
         begin
              BCH_decoded_finished <= 1'b0;
         end
+    else if(transmition_Finished == 1'b0) begin
+        BCH_decoded_finished <= 1'b0;
+    end
     else
         begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
@@ -306,6 +348,26 @@ begin
                 decode_syndromes(correcting_capability*2,syndrome_coding); // syndrome numbering starts from 1;
                 BCH_decoded_finished <= 1'b1;
 
+            end
+        end
+end
+
+
+always_ff @(posedge clk or posedge rst)
+begin
+    if(rst == 1'b1)
+        begin
+             DataOutputReady <= 1'b0;
+        end
+    else if(transmition_Finished == 1'b0) begin
+        DataOutputReady <= 1'b0;
+    end
+    else
+        begin
+            if(state == FINISHED && DataOutputReady == 1'b0)
+            begin
+                
+                DataOutputReady <= 1'b1;
             end
         end
 end

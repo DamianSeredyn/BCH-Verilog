@@ -64,6 +64,15 @@ module modul_studenta_unit_test;
     logic UART_TX;
     logic UART_RX;
 
+    logic [7:0] DataIN;
+     logic [7:0] DataOUT;
+      logic BCH;
+      logic FS;
+      logic BER;
+      logic Gauss;
+      logic [7:0] density;
+      logic [7:0] BERGen;
+
     logic        s_axil_awready;
     logic        s_axil_awvalid;
     logic [20:0] s_axil_awaddr;
@@ -139,8 +148,16 @@ module modul_studenta_unit_test;
 
         .DebugTestSystem ( DEBUGTESTSYSTEM),
         .LED             ( LED            ),
-        .UART_RX         ( UART_RX        ),
-        .UART_TX         ( UART_TX        )
+        .DataIN          ( DataIN         ),
+        .DataOUT         ( DataOUT        ),
+        .BCH             ( BCH            ),
+        .FS              ( FS             ),
+        .BER             ( BER            ),
+        .density         ( density        ),
+        .BERGen          ( BERGen         ),
+        .Gauss          ( Gauss         ),
+        .DataReady       ( DataReady      )
+
         
     );
 
@@ -291,38 +308,6 @@ endfunction
                  end
     `SVTEST_END
 
-    `SVTEST(uart_tx_simple)
-
-    // 9600 bps → 1 bit = 104166 ns → 5208 cykli zegara 50 MHz (20 ns)
-    localparam int BIT_PERIOD = 10417;
-        // Początkowy stan linii UART (wysoki = bezczynność)
-        UART_RX = 1;
-        repeat (1000) @(posedge clk_100mhz);
-
-        // Bit startu (0)
-        UART_RX = 0;
-        repeat (BIT_PERIOD) @(posedge clk_100mhz);
-
-        // Bity danych (0x0F = 00001111, LSB first)
-        UART_RX = 1; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 0
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 1
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 2
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 3
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 4
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 5
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 6
-        UART_RX = 0; repeat (BIT_PERIOD) @(posedge clk_100mhz); // bit 7
-
-        // Bit stopu (1)
-        UART_RX = 1;
-        repeat (BIT_PERIOD) @(posedge clk_100mhz);
-
-        // Czekaj po transmisji
-        repeat (1000) @(posedge clk_100mhz);
-         
-         $display("Odebrany bajt: %b", dut.RX_buff);
-         $display("LED: %b", dut.LED);
-    `SVTEST_END
     `SVTEST(process_test)
 
 

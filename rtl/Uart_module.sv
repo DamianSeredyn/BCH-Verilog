@@ -100,17 +100,17 @@ module UART_module #(
                                     5: RX_buff[7:0]   <= temp_RX_buff;
                                 endcase
                                 commandIndex <= commandIndex+1;
-                                if(RX_buff == 8'b0000_1111)    begin
-                                    commandIndex <= 0;
-                                    Data_Ready <= 1'b1;        
-                                end 
-                                if(commandIndex == 5)    begin
+                                if(commandIndex > 5)    begin
                                     commandIndex <= 0;
                                     Data_Ready <= 1'b0; 
                                     RX_buff <= 48'b0;       
                                 end                                 
                             end
                     end
+                    if(RX_buff[7:0] == 8'b0000_1111)    begin
+                                    commandIndex <= 0;
+                                    Data_Ready <= 1'b1;        
+                    end 
                     prevTransimitonFinished <= TransimitonFinished;
                 end
         end
