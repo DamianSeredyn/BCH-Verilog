@@ -1,27 +1,30 @@
 addrmap registers {
-    name = "Test Registers";
-    desc = "Register description of example";
+    name = "Registers";
+    desc = "Main program Registers";
 
     default regwidth = 32;
     default sw = rw;
-    default hw = r;
+    default hw = rw;
 
+    // SYSTEM ID Register
     reg {
         name = "SYSTEM ID";
 
         field {
             sw   = r;
             hw   = na;
-            desc = "The two least signicant bytes";
+            desc = "The two least significant bytes";
         } FIRST[15:0] = 0x1234;
 
         field {
             sw   = r;
             hw   = na;
-            desc = "The two most signicant bytes";
+            desc = "The two most significant bytes";
         } SECOND[31:16] = 0xABCD;
+
     } SYSTEM_ID @ 0x0;
 
+    // LEDS Register
     reg {
         name = "LEDS";
 
@@ -33,5 +36,96 @@ addrmap registers {
         } LED[7:0] = 0;
 
     } LEDS @ 0x4;
+
+    // DEBUG Register
+    reg {
+        name = "DEBUG";
+
+        field {
+            hw = w;   // hardware ustawia bit
+            sw = r;   // software może tylko czytać
+            desc = "Debug test system enable";
+        } DEBUGTESTSYSTEM[0:0] = 0;
+
+    } DEBUG @ 0x8;
+
+    // INPUT_DATA Register (poprawione przesunięcia bitów)
+    reg {
+        name = "INPUT_DATA";
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 8;
+            desc = "Input data to program";
+        } DataIN[7:0] = 0;
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 1;
+            desc = "BCH signal";
+        } BCH[8:8] = 0;
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 1;
+            desc = "FS signal";
+        } FS[9:9] = 0;
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 1;
+            desc = "Gauss signal";
+        } Gauss[10:10] = 0;
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 1;
+            desc = "BER signal";
+        } BER[11:11] = 0;
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 8;
+            desc = "Density parameter";
+        } density[19:12] = 0;
+
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 8;
+            desc = "BER generation parameter";
+        } BERGen[27:20] = 0;
+
+        // 4 bity wolne (28–31)
+
+    } INPUT_DATA @ 0xC;
+
+    // OUTPUT_DATA Register
+    reg {
+        name = "OUTPUT_DATA";
+
+        field {
+            hw = w;
+            sw = r;
+            fieldwidth = 8;
+            desc = "Data output bus";
+        } DataOUT[7:0] = 0;
+
+        field {
+            hw = w;
+            sw = r;
+            fieldwidth = 1;
+            desc = "Data output ready flag";
+        } DataOutputReady[8:8] = 0;
+
+        // 23 bity wolne (9–31)
+
+    } OUTPUT_DATA @ 0x10;
 
 };

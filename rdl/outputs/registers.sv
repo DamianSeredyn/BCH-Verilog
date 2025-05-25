@@ -7,7 +7,7 @@ module registers (
 
         output logic s_axil_awready,
         input wire s_axil_awvalid,
-        input wire [2:0] s_axil_awaddr,
+        input wire [4:0] s_axil_awaddr,
         input wire [2:0] s_axil_awprot,
         output logic s_axil_wready,
         input wire s_axil_wvalid,
@@ -18,13 +18,14 @@ module registers (
         output logic [1:0] s_axil_bresp,
         output logic s_axil_arready,
         input wire s_axil_arvalid,
-        input wire [2:0] s_axil_araddr,
+        input wire [4:0] s_axil_araddr,
         input wire [2:0] s_axil_arprot,
         input wire s_axil_rready,
         output logic s_axil_rvalid,
         output logic [31:0] s_axil_rdata,
         output logic [1:0] s_axil_rresp,
 
+        input registers_pkg::registers__in_t hwif_in,
         output registers_pkg::registers__out_t hwif_out
     );
 
@@ -33,7 +34,7 @@ module registers (
     //--------------------------------------------------------------------------
     logic cpuif_req;
     logic cpuif_req_is_wr;
-    logic [2:0] cpuif_addr;
+    logic [4:0] cpuif_addr;
     logic [31:0] cpuif_wr_data;
     logic [31:0] cpuif_wr_biten;
     logic cpuif_req_stall_wr;
@@ -50,10 +51,10 @@ module registers (
     logic [1:0] axil_n_in_flight;
     logic axil_prev_was_rd;
     logic axil_arvalid;
-    logic [2:0] axil_araddr;
+    logic [4:0] axil_araddr;
     logic axil_ar_accept;
     logic axil_awvalid;
-    logic [2:0] axil_awaddr;
+    logic [4:0] axil_awaddr;
     logic axil_wvalid;
     logic [31:0] axil_wdata;
     logic [3:0] axil_wstrb;
@@ -131,17 +132,17 @@ module registers (
             if(axil_arvalid && !axil_prev_was_rd) begin
                 cpuif_req = '1;
                 cpuif_req_is_wr = '0;
-                cpuif_addr = {axil_araddr[2:2], 2'b0};
+                cpuif_addr = {axil_araddr[4:2], 2'b0};
                 if(!cpuif_req_stall_rd) axil_ar_accept = '1;
             end else if(axil_awvalid && axil_wvalid) begin
                 cpuif_req = '1;
                 cpuif_req_is_wr = '1;
-                cpuif_addr = {axil_awaddr[2:2], 2'b0};
+                cpuif_addr = {axil_awaddr[4:2], 2'b0};
                 if(!cpuif_req_stall_wr) axil_aw_accept = '1;
             end else if(axil_arvalid) begin
                 cpuif_req = '1;
                 cpuif_req_is_wr = '0;
-                cpuif_addr = {axil_araddr[2:2], 2'b0};
+                cpuif_addr = {axil_araddr[4:2], 2'b0};
                 if(!cpuif_req_stall_rd) axil_ar_accept = '1;
             end
         end
@@ -228,6 +229,9 @@ module registers (
     typedef struct {
         logic SYSTEM_ID;
         logic LEDS;
+        logic DEBUG;
+        logic INPUT_DATA;
+        logic OUTPUT_DATA;
     } decoded_reg_strb_t;
     decoded_reg_strb_t decoded_reg_strb;
     logic decoded_req;
@@ -236,8 +240,11 @@ module registers (
     logic [31:0] decoded_wr_biten;
 
     always_comb begin
-        decoded_reg_strb.SYSTEM_ID = cpuif_req_masked & (cpuif_addr == 3'h0);
-        decoded_reg_strb.LEDS = cpuif_req_masked & (cpuif_addr == 3'h4);
+        decoded_reg_strb.SYSTEM_ID = cpuif_req_masked & (cpuif_addr == 5'h0);
+        decoded_reg_strb.LEDS = cpuif_req_masked & (cpuif_addr == 5'h4);
+        decoded_reg_strb.DEBUG = cpuif_req_masked & (cpuif_addr == 5'h8);
+        decoded_reg_strb.INPUT_DATA = cpuif_req_masked & (cpuif_addr == 5'hc);
+        decoded_reg_strb.OUTPUT_DATA = cpuif_req_masked & (cpuif_addr == 5'h10);
     end
 
     // Pass down signals to next stage
@@ -256,6 +263,36 @@ module registers (
                 logic load_next;
             } LED;
         } LEDS;
+        struct {
+            struct {
+                logic [7:0] next;
+                logic load_next;
+            } DataIN;
+            struct {
+                logic next;
+                logic load_next;
+            } BCH;
+            struct {
+                logic next;
+                logic load_next;
+            } FS;
+            struct {
+                logic next;
+                logic load_next;
+            } Gauss;
+            struct {
+                logic next;
+                logic load_next;
+            } BER;
+            struct {
+                logic [7:0] next;
+                logic load_next;
+            } density;
+            struct {
+                logic [7:0] next;
+                logic load_next;
+            } BERGen;
+        } INPUT_DATA;
     } field_combo_t;
     field_combo_t field_combo;
 
@@ -265,6 +302,29 @@ module registers (
                 logic [7:0] value;
             } LED;
         } LEDS;
+        struct {
+            struct {
+                logic [7:0] value;
+            } DataIN;
+            struct {
+                logic value;
+            } BCH;
+            struct {
+                logic value;
+            } FS;
+            struct {
+                logic value;
+            } Gauss;
+            struct {
+                logic value;
+            } BER;
+            struct {
+                logic [7:0] value;
+            } density;
+            struct {
+                logic [7:0] value;
+            } BERGen;
+        } INPUT_DATA;
     } field_storage_t;
     field_storage_t field_storage;
 
@@ -287,6 +347,160 @@ module registers (
         end
     end
     assign hwif_out.LEDS.LED.value = field_storage.LEDS.LED.value;
+    // Field: registers.INPUT_DATA.DataIN
+    always_comb begin
+        automatic logic [7:0] next_c = field_storage.INPUT_DATA.DataIN.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.DataIN.value & ~decoded_wr_biten[7:0]) | (decoded_wr_data[7:0] & decoded_wr_biten[7:0]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.DataIN.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.DataIN.next = next_c;
+        field_combo.INPUT_DATA.DataIN.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.DataIN.value <= 8'h0;
+        end else if(field_combo.INPUT_DATA.DataIN.load_next) begin
+            field_storage.INPUT_DATA.DataIN.value <= field_combo.INPUT_DATA.DataIN.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.DataIN.value = field_storage.INPUT_DATA.DataIN.value;
+    // Field: registers.INPUT_DATA.BCH
+    always_comb begin
+        automatic logic [0:0] next_c = field_storage.INPUT_DATA.BCH.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.BCH.value & ~decoded_wr_biten[8:8]) | (decoded_wr_data[8:8] & decoded_wr_biten[8:8]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.BCH.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.BCH.next = next_c;
+        field_combo.INPUT_DATA.BCH.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.BCH.value <= 1'h0;
+        end else if(field_combo.INPUT_DATA.BCH.load_next) begin
+            field_storage.INPUT_DATA.BCH.value <= field_combo.INPUT_DATA.BCH.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.BCH.value = field_storage.INPUT_DATA.BCH.value;
+    // Field: registers.INPUT_DATA.FS
+    always_comb begin
+        automatic logic [0:0] next_c = field_storage.INPUT_DATA.FS.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.FS.value & ~decoded_wr_biten[9:9]) | (decoded_wr_data[9:9] & decoded_wr_biten[9:9]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.FS.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.FS.next = next_c;
+        field_combo.INPUT_DATA.FS.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.FS.value <= 1'h0;
+        end else if(field_combo.INPUT_DATA.FS.load_next) begin
+            field_storage.INPUT_DATA.FS.value <= field_combo.INPUT_DATA.FS.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.FS.value = field_storage.INPUT_DATA.FS.value;
+    // Field: registers.INPUT_DATA.Gauss
+    always_comb begin
+        automatic logic [0:0] next_c = field_storage.INPUT_DATA.Gauss.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.Gauss.value & ~decoded_wr_biten[10:10]) | (decoded_wr_data[10:10] & decoded_wr_biten[10:10]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.Gauss.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.Gauss.next = next_c;
+        field_combo.INPUT_DATA.Gauss.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.Gauss.value <= 1'h0;
+        end else if(field_combo.INPUT_DATA.Gauss.load_next) begin
+            field_storage.INPUT_DATA.Gauss.value <= field_combo.INPUT_DATA.Gauss.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.Gauss.value = field_storage.INPUT_DATA.Gauss.value;
+    // Field: registers.INPUT_DATA.BER
+    always_comb begin
+        automatic logic [0:0] next_c = field_storage.INPUT_DATA.BER.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.BER.value & ~decoded_wr_biten[11:11]) | (decoded_wr_data[11:11] & decoded_wr_biten[11:11]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.BER.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.BER.next = next_c;
+        field_combo.INPUT_DATA.BER.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.BER.value <= 1'h0;
+        end else if(field_combo.INPUT_DATA.BER.load_next) begin
+            field_storage.INPUT_DATA.BER.value <= field_combo.INPUT_DATA.BER.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.BER.value = field_storage.INPUT_DATA.BER.value;
+    // Field: registers.INPUT_DATA.density
+    always_comb begin
+        automatic logic [7:0] next_c = field_storage.INPUT_DATA.density.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.density.value & ~decoded_wr_biten[19:12]) | (decoded_wr_data[19:12] & decoded_wr_biten[19:12]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.density.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.density.next = next_c;
+        field_combo.INPUT_DATA.density.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.density.value <= 8'h0;
+        end else if(field_combo.INPUT_DATA.density.load_next) begin
+            field_storage.INPUT_DATA.density.value <= field_combo.INPUT_DATA.density.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.density.value = field_storage.INPUT_DATA.density.value;
+    // Field: registers.INPUT_DATA.BERGen
+    always_comb begin
+        automatic logic [7:0] next_c = field_storage.INPUT_DATA.BERGen.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.BERGen.value & ~decoded_wr_biten[27:20]) | (decoded_wr_data[27:20] & decoded_wr_biten[27:20]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.BERGen.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.BERGen.next = next_c;
+        field_combo.INPUT_DATA.BERGen.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.BERGen.value <= 8'h0;
+        end else if(field_combo.INPUT_DATA.BERGen.load_next) begin
+            field_storage.INPUT_DATA.BERGen.value <= field_combo.INPUT_DATA.BERGen.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.BERGen.value = field_storage.INPUT_DATA.BERGen.value;
 
     //--------------------------------------------------------------------------
     // Write response
@@ -304,11 +518,24 @@ module registers (
     logic [31:0] readback_data;
     
     // Assign readback values to a flattened array
-    logic [31:0] readback_array[2];
+    logic [31:0] readback_array[5];
     assign readback_array[0][15:0] = (decoded_reg_strb.SYSTEM_ID && !decoded_req_is_wr) ? 'h1234 : '0;
     assign readback_array[0][31:16] = (decoded_reg_strb.SYSTEM_ID && !decoded_req_is_wr) ? 'habcd : '0;
     assign readback_array[1][7:0] = (decoded_reg_strb.LEDS && !decoded_req_is_wr) ? field_storage.LEDS.LED.value : '0;
     assign readback_array[1][31:8] = '0;
+    assign readback_array[2][0:0] = (decoded_reg_strb.DEBUG && !decoded_req_is_wr) ? hwif_in.DEBUG.DEBUGTESTSYSTEM.next : '0;
+    assign readback_array[2][31:1] = '0;
+    assign readback_array[3][7:0] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.DataIN.value : '0;
+    assign readback_array[3][8:8] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.BCH.value : '0;
+    assign readback_array[3][9:9] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.FS.value : '0;
+    assign readback_array[3][10:10] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.Gauss.value : '0;
+    assign readback_array[3][11:11] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.BER.value : '0;
+    assign readback_array[3][19:12] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.density.value : '0;
+    assign readback_array[3][27:20] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.BERGen.value : '0;
+    assign readback_array[3][31:28] = '0;
+    assign readback_array[4][7:0] = (decoded_reg_strb.OUTPUT_DATA && !decoded_req_is_wr) ? hwif_in.OUTPUT_DATA.DataOUT.next : '0;
+    assign readback_array[4][8:8] = (decoded_reg_strb.OUTPUT_DATA && !decoded_req_is_wr) ? hwif_in.OUTPUT_DATA.DataOutputReady.next : '0;
+    assign readback_array[4][31:9] = '0;
 
     // Reduce the array
     always_comb begin
@@ -316,7 +543,7 @@ module registers (
         readback_done = decoded_req & ~decoded_req_is_wr;
         readback_err = '0;
         readback_data_var = '0;
-        for(int i=0; i<2; i++) readback_data_var |= readback_array[i];
+        for(int i=0; i<5; i++) readback_data_var |= readback_array[i];
         readback_data = readback_data_var;
     end
 

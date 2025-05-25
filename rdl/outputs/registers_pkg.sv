@@ -4,7 +4,72 @@
 package registers_pkg;
 
     localparam REGISTERS_DATA_WIDTH = 32;
-    localparam REGISTERS_MIN_ADDR_WIDTH = 3;
+    localparam REGISTERS_MIN_ADDR_WIDTH = 5;
+
+    typedef struct {
+        logic next;
+    } registers__DEBUG__DEBUGTESTSYSTEM__in_t;
+
+    typedef struct {
+        registers__DEBUG__DEBUGTESTSYSTEM__in_t DEBUGTESTSYSTEM;
+    } registers__DEBUG__in_t;
+
+    typedef struct {
+        logic [7:0] next;
+    } registers__INPUT_DATA__DataIN__in_t;
+
+    typedef struct {
+        logic next;
+    } registers__INPUT_DATA__BCH__in_t;
+
+    typedef struct {
+        logic next;
+    } registers__INPUT_DATA__FS__in_t;
+
+    typedef struct {
+        logic next;
+    } registers__INPUT_DATA__Gauss__in_t;
+
+    typedef struct {
+        logic next;
+    } registers__INPUT_DATA__BER__in_t;
+
+    typedef struct {
+        logic [7:0] next;
+    } registers__INPUT_DATA__density__in_t;
+
+    typedef struct {
+        logic [7:0] next;
+    } registers__INPUT_DATA__BERGen__in_t;
+
+    typedef struct {
+        registers__INPUT_DATA__DataIN__in_t DataIN;
+        registers__INPUT_DATA__BCH__in_t BCH;
+        registers__INPUT_DATA__FS__in_t FS;
+        registers__INPUT_DATA__Gauss__in_t Gauss;
+        registers__INPUT_DATA__BER__in_t BER;
+        registers__INPUT_DATA__density__in_t density;
+        registers__INPUT_DATA__BERGen__in_t BERGen;
+    } registers__INPUT_DATA__in_t;
+
+    typedef struct {
+        logic [7:0] next;
+    } registers__OUTPUT_DATA__DataOUT__in_t;
+
+    typedef struct {
+        logic next;
+    } registers__OUTPUT_DATA__DataOutputReady__in_t;
+
+    typedef struct {
+        registers__OUTPUT_DATA__DataOUT__in_t DataOUT;
+        registers__OUTPUT_DATA__DataOutputReady__in_t DataOutputReady;
+    } registers__OUTPUT_DATA__in_t;
+
+    typedef struct {
+        registers__DEBUG__in_t DEBUG;
+        registers__INPUT_DATA__in_t INPUT_DATA;
+        registers__OUTPUT_DATA__in_t OUTPUT_DATA;
+    } registers__in_t;
 
     typedef struct {
         logic [7:0] value;
@@ -15,6 +80,45 @@ package registers_pkg;
     } registers__LEDS__out_t;
 
     typedef struct {
+        logic [7:0] value;
+    } registers__INPUT_DATA__DataIN__out_t;
+
+    typedef struct {
+        logic value;
+    } registers__INPUT_DATA__BCH__out_t;
+
+    typedef struct {
+        logic value;
+    } registers__INPUT_DATA__FS__out_t;
+
+    typedef struct {
+        logic value;
+    } registers__INPUT_DATA__Gauss__out_t;
+
+    typedef struct {
+        logic value;
+    } registers__INPUT_DATA__BER__out_t;
+
+    typedef struct {
+        logic [7:0] value;
+    } registers__INPUT_DATA__density__out_t;
+
+    typedef struct {
+        logic [7:0] value;
+    } registers__INPUT_DATA__BERGen__out_t;
+
+    typedef struct {
+        registers__INPUT_DATA__DataIN__out_t DataIN;
+        registers__INPUT_DATA__BCH__out_t BCH;
+        registers__INPUT_DATA__FS__out_t FS;
+        registers__INPUT_DATA__Gauss__out_t Gauss;
+        registers__INPUT_DATA__BER__out_t BER;
+        registers__INPUT_DATA__density__out_t density;
+        registers__INPUT_DATA__BERGen__out_t BERGen;
+    } registers__INPUT_DATA__out_t;
+
+    typedef struct {
         registers__LEDS__out_t LEDS;
+        registers__INPUT_DATA__out_t INPUT_DATA;
     } registers__out_t;
 endpackage
