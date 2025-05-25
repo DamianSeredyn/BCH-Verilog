@@ -64,6 +64,16 @@ module modul_studenta_unit_test;
     logic UART_TX;
     logic UART_RX;
 
+    logic [7:0] DataIN;
+     logic [7:0] DataOUT;
+      logic BCH;
+      logic FS;
+      logic BER;
+      logic Gauss;
+      logic [7:0] density;
+      logic [7:0] BERGen;
+      logic DataOutputReady;
+
     logic        s_axil_awready;
     logic        s_axil_awvalid;
     logic [20:0] s_axil_awaddr;
@@ -139,8 +149,17 @@ module modul_studenta_unit_test;
 
         .DebugTestSystem ( DEBUGTESTSYSTEM),
         .LED             ( LED            ),
-        .UART_RX         ( UART_RX        ),
-        .UART_TX         ( UART_TX        )
+        .DataIN          ( DataIN         ),
+        .DataOUT         ( DataOUT        ),
+        .BCH             ( BCH            ),
+        .FS              ( FS             ),
+        .BER             ( BER            ),
+        .density         ( density        ),
+        .BERGen          ( BERGen         ),
+        .Gauss           ( Gauss          ),
+        .DataReady       ( DataReady      ),
+        .DataOutputReady ( DataOutputReady)
+
         
     );
 
@@ -290,6 +309,7 @@ endfunction
                     i++;
                  end
     `SVTEST_END
+
     `SVTEST(process_test)
 
 
