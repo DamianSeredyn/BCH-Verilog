@@ -72,6 +72,7 @@ module modul_studenta_unit_test;
       logic Gauss;
       logic [7:0] density;
       logic [7:0] BERGen;
+      logic DataOutputReady;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -155,8 +156,9 @@ module modul_studenta_unit_test;
         .BER             ( BER            ),
         .density         ( density        ),
         .BERGen          ( BERGen         ),
-        .Gauss          ( Gauss         ),
-        .DataReady       ( DataReady      )
+        .Gauss           ( Gauss          ),
+        .DataReady       ( DataReady      ),
+        .DataOutputReady ( DataOutputReady)
 
         
     );

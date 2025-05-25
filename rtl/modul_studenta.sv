@@ -319,7 +319,7 @@ begin
             BCH_startErrorGen_finished <= 1'b0;
             current_iteration <= 0;
             encoded_signal_mask <= 0;
-    end   
+        end   
     else
         begin
             if(state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0)
@@ -750,7 +750,7 @@ function [15:0] encode_bch;
     logic [5:0] i;
     begin
         result = 16'b0;
-        for (i = 0; i < 7; i++) begin
+        for (i = 0; i < 5; i++) begin
             if (px[i])
                 result = result ^ (gx << i);
         end
