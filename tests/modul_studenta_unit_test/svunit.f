@@ -6,6 +6,7 @@
 ../../../rtl/modul_studenta.sv
 ../../../rtl/Uart_module.sv
 ../../../rtl/clock_div.sv
+../../../rtl/BCH_encoder.sv
 ../../../rtl/Gauss/gng.v
 ../../../rtl/Gauss/gng_ctg.v
 ../../../rtl/Gauss/gng_coef.v

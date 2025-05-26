@@ -73,6 +73,7 @@ module modul_studenta_unit_test;
       logic [7:0] density;
       logic [7:0] BERGen;
       logic DataOutputReady;
+      logic DataReady;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -290,9 +291,9 @@ endfunction
         end
         
         $display("state of BCH_encoded = %0b", dut.BCH_encoded_finished);
-        $display("encoded signal = %0b", dut.encoded_signal);
+        $display("encoded signal = %0b%0b", dut.encoded_signal1,dut.encoded_signal2);
         $display("expected signal = %0b", expected_encoded_signal);
-        `FAIL_UNLESS_EQUAL(dut.encoded_signal, expected_encoded_signal);
+        `FAIL_UNLESS_EQUAL(dut.encoded_signal1, expected_encoded_signal);
         `FAIL_UNLESS_EQUAL(dut.BCH_encoded_finished, 1'b1);  
 
 
@@ -322,9 +323,12 @@ endfunction
     $display("==============================");
 
     dut.state = dut.IDLE;
-    DEBUGTESTSYSTEM = 1'b1;
+    DataIN = 8'b01010101;
+    Gauss = 1'b0;
+    BCH = 1'b0;
     prev_state = dut.state;
-
+    $display("Data input = 01010101");
+    DataReady = 1'b1;
     for (int i = 0; i < 2000; i++) begin
         @(posedge clk_100mhz);
         if (dut.state !== prev_state) begin
@@ -332,14 +336,14 @@ endfunction
             $display("State transition %0d: %0s -> %0s [TIME = %0d]", transition_count,
                 appStateToString(prev_state), appStateToString(dut.state),i);
             if(prev_state == dut.ENCODING_BCH)   begin
-                $display("Encdoded signal = %0b", dut.encoded_signal);
+                $display("Encdoded signal = %0b", dut.encoded_signal1);
             end
             else if(prev_state == dut.GENERATE_NOISE) begin 
-                $display("Noised Signal = %0b", dut.encoded_signal);
+                $display("Noised Signal = %0b", dut.encoded_signal1);
                 $display("Noise = %0b", dut.data_out);
             end
             else if(prev_state == dut.GENERATE_ERRORS) begin 
-                $display("Noised Signal = %0b", dut.encoded_signal);
+                $display("Noised Signal = %0b", dut.encoded_signal1);
                 $display("Number of Errors = %0d", dut.numberOfGenerateErrors);
             end
             prev_state = dut.state;
@@ -347,7 +351,7 @@ endfunction
     end
 
     $display("Total number of state transitions: %0d", transition_count);
-
+    $display("Data output: %0b, status of data: %0b", dut.DataOUT, dut.DataOutputReady);
     `SVTEST_END
 
 

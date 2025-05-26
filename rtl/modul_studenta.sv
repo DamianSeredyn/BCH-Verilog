@@ -51,15 +51,23 @@ logic randomGenerateErrors = 1'b0;
 logic [7:0] numberOfGenerateErrors = 8'b0;
 logic [7:0] densityPar = 8'b0;
 logic transmition_Finished = 1'b0;
+logic [7:0] signal_input_comboined; 
 
-
-// BCH THINNNNNNNNNNGSSSSSSSSSSSSSSSSSSSSSSS!
-logic [4:0] signal_input = 5'b10011; //temp value for testing max 7 bits
+// BCH THINNNNNNNNNNGSSSSSSSSSSSSSSSSSSSSSSS! Encoder!
+logic [4:0] signal_input1 = 5'b10011;
+logic [4:0] signal_input2 = 5'b10011; //temp value for testing max 7 bits
 // generator dla max 2 błędów 9'b111010001. Możemy przesłać max 7 bitów
 // generator dla max 3 błędów 11'b10100110111 // Możemy przesłać maksymalnie 5 bitów
-logic [10:0] generator_signal = 11'b10100110111; //DO NOT TOUCH
 // dodać funkcję która po przesłaniu danych będzie zerować te wszystkie poniższe zmienne
-logic [15:0] encoded_signal = 16'b0;
+logic [15:0] encoded_signal1;
+logic [15:0] encoded_signal2;
+
+logic startEncoding1;
+logic startEncoding2;
+
+logic EncoderReady1;
+logic EncoderReady2;
+
 logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
@@ -76,7 +84,8 @@ logic BCH_decoded_finished = 1'b0;
 
 // GAUSSSS
   logic [7:0] noisedSignalWithoutBCH;
-  logic [15:0] noisedSignalWithBCH;
+  logic [15:0] noisedSignalWithBCH1;
+  logic [15:0] noisedSignalWithBCH2;
   wire [15:0] data_out;
   wire valid_ctg;
   wire [63:0]  rnd;
@@ -131,6 +140,24 @@ gng_ctg #(
     );
 
 
+    BCH_encoder enc1 (
+        .clk(clk),
+        .rst(rst),
+         .startEncoding(startEncoding1),
+        .signal_input(signal_input1),
+        .encoded_signal(encoded_signal1),
+        .EncoderReady(EncoderReady1)
+    
+    );
+
+    BCH_encoder enc2 (
+        .clk(clk),
+        .rst(rst),
+        .startEncoding(startEncoding2),
+        .signal_input(signal_input2),
+        .encoded_signal(encoded_signal2),
+        .EncoderReady(EncoderReady2)
+    );
 
 
 typedef enum logic[2:0]{
@@ -154,7 +181,9 @@ begin
             numberOfGenerateErrors <= 8'b0;  
             densityPar <= 8'b0;
             transmition_Finished <= 1'b0;
-            signal_input <= 8'b0;
+            signal_input1 <= 5'b0;
+            signal_input2 <= 5'b0;
+            signal_input_comboined <= 8'b0;
 	    end 
         else if(DataOutputReady == 1'b1) begin
             transmition_Finished <= 1'b0;
@@ -168,9 +197,11 @@ begin
                 numberOfGenerateErrors <= BERGen;  
                 densityPar <= density;
                 transmition_Finished <= 1'b1;
-                signal_input <= DataIN;
+                signal_input1 <= DataIN[7:4];
+                signal_input2 <= DataIN[3:0];
+                signal_input_comboined <= DataIN;
 
-                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
+                if(Gauss == 1'b1 ||BER == 1'b1 )
                     begin
                         ena <= 1'b1;    
                     end
@@ -274,17 +305,23 @@ begin
     if(rst == 1'b1)
         begin
             BCH_encoded_finished <= 1'b0;
-            encoded_signal <= 16'b0;
         end
      else if(transmition_Finished == 1'b0) begin
             BCH_encoded_finished <= 1'b0;
+            
     end          
     else
         begin
         if (state == ENCODING_BCH && BCH_encoded_finished == 1'b0)
             begin
-                encoded_signal <= encode_bch(signal_input, generator_signal);
-                BCH_encoded_finished <= 1'b1;
+                startEncoding1 <= 1'b1;
+                startEncoding2 <= 1'b1;
+                
+                if(EncoderReady1 == 1'b1 &&  EncoderReady2 == 1'b1) begin
+                    BCH_encoded_finished <= 1'b1;
+                    startEncoding1 <= 1'b0;
+                    startEncoding2 <= 1'b0;                    
+                end
             end
         end
 
@@ -305,10 +342,11 @@ begin
             begin
                 if (valid_out) begin
                     if(BCH_coding == 1'b1) begin
-                        noisedSignalWithBCH <= encoded_signal + data_out; 
+                        noisedSignalWithBCH1 <= encoded_signal1 ^ data_out; 
+                        noisedSignalWithBCH2 <= encoded_signal2 ^ data_out; 
                     end
                     else begin
-                        noisedSignalWithoutBCH <= signal_input + data_out; 
+                        noisedSignalWithoutBCH <= signal_input_comboined + data_out; 
                     end
                     BCH_startNoise_finished <= 1'b1; 
                 end
@@ -338,8 +376,14 @@ always_ff @(posedge clk or posedge rst) begin
             if (BCH_coding == 1'b1) begin
                 logic [16-1:0] temp_signal;
                 logic [16-1:0] temp_mask;
-                generate_error(16, rand_idx[3:0], encoded_signal, encoded_signal_mask, current_iteration, numberOfGenerateErrors,
-                temp_signal, temp_mask, temp_iter, done);
+                if(rand_idx>3)  begin 
+                    generate_error(16, rand_idx[3:0], encoded_signal1, encoded_signal_mask, current_iteration, numberOfGenerateErrors,
+                    temp_signal, temp_mask, temp_iter, done);
+                end else
+                begin
+                    generate_error(16, rand_idx[3:0], encoded_signal2, encoded_signal_mask, current_iteration, numberOfGenerateErrors,
+                    temp_signal, temp_mask, temp_iter, done);                
+                end
 
                 REG_noisedSignalWithBCH <= temp_signal;
                 encoded_signal_mask <= temp_mask;
@@ -347,7 +391,7 @@ always_ff @(posedge clk or posedge rst) begin
             else begin
                 logic [8-1:0] temp_signal;
                 logic [8-1:0] temp_mask;
-                generate_error(8, rand_idx[2:0], signal_input, signal_input_mask, current_iteration, numberOfGenerateErrors,
+                generate_error(8, rand_idx[2:0], signal_input_comboined, signal_input_mask, current_iteration, numberOfGenerateErrors,
                 temp_signal, temp_mask, temp_iter, done);
 
                 REG_noisedSignalWithoutBCH <= temp_signal;
@@ -710,7 +754,7 @@ begin
                         DataOUT <= decoded_signal[7:0];
                     end
                     else begin
-                        DataOUT <= signal_input;
+                        DataOUT <= signal_input_comboined;
                     end               
                 end
                 DataOutputReady <= 1'b1;
@@ -809,19 +853,6 @@ task syndromes;
     end
 endtask
 
-function [15:0] encode_bch;
-    input [4:0] px;
-    input [10:0] gx;
-    logic [15:0] result;
-    begin
-        result = 16'b0;
-        for (logic [5:0] i = 0; i < 5; i++) begin
-            if (px[i])
-                result = result ^ (gx << i);
-        end
-        encode_bch = result;
-    end
-endfunction
 
 
 
