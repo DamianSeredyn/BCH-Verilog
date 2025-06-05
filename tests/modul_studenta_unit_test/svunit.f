@@ -7,6 +7,7 @@
 ../../../rtl/Uart_module.sv
 ../../../rtl/clock_div.sv
 ../../../rtl/BCH_encoder.sv
+../../../rtl/BCH_decoder.sv
 ../../../rtl/Gauss/gng.v
 ../../../rtl/Gauss/gng_ctg.v
 ../../../rtl/Gauss/gng_coef.v
