@@ -292,7 +292,21 @@ module registers (
                 logic [7:0] next;
                 logic load_next;
             } BERGen;
+            struct {
+                logic next;
+                logic load_next;
+            } DataINReady;
         } INPUT_DATA;
+        struct {
+            struct {
+                logic [7:0] next;
+                logic load_next;
+            } DataOUT;
+            struct {
+                logic next;
+                logic load_next;
+            } DataOutputReady;
+        } OUTPUT_DATA;
     } field_combo_t;
     field_combo_t field_combo;
 
@@ -324,7 +338,18 @@ module registers (
             struct {
                 logic [7:0] value;
             } BERGen;
+            struct {
+                logic value;
+            } DataINReady;
         } INPUT_DATA;
+        struct {
+            struct {
+                logic [7:0] value;
+            } DataOUT;
+            struct {
+                logic value;
+            } DataOutputReady;
+        } OUTPUT_DATA;
     } field_storage_t;
     field_storage_t field_storage;
 
@@ -501,6 +526,66 @@ module registers (
         end
     end
     assign hwif_out.INPUT_DATA.BERGen.value = field_storage.INPUT_DATA.BERGen.value;
+    // Field: registers.INPUT_DATA.DataINReady
+    always_comb begin
+        automatic logic [0:0] next_c = field_storage.INPUT_DATA.DataINReady.value;
+        automatic logic load_next_c = '0;
+        if(decoded_reg_strb.INPUT_DATA && decoded_req_is_wr) begin // SW write
+            next_c = (field_storage.INPUT_DATA.DataINReady.value & ~decoded_wr_biten[28:28]) | (decoded_wr_data[28:28] & decoded_wr_biten[28:28]);
+            load_next_c = '1;
+        end else begin // HW Write
+            next_c = hwif_in.INPUT_DATA.DataINReady.next;
+            load_next_c = '1;
+        end
+        field_combo.INPUT_DATA.DataINReady.next = next_c;
+        field_combo.INPUT_DATA.DataINReady.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.INPUT_DATA.DataINReady.value <= 1'h0;
+        end else if(field_combo.INPUT_DATA.DataINReady.load_next) begin
+            field_storage.INPUT_DATA.DataINReady.value <= field_combo.INPUT_DATA.DataINReady.next;
+        end
+    end
+    assign hwif_out.INPUT_DATA.DataINReady.value = field_storage.INPUT_DATA.DataINReady.value;
+    // Field: registers.OUTPUT_DATA.DataOUT
+    always_comb begin
+        automatic logic [7:0] next_c = field_storage.OUTPUT_DATA.DataOUT.value;
+        automatic logic load_next_c = '0;
+        
+        // HW Write
+        next_c = hwif_in.OUTPUT_DATA.DataOUT.next;
+        load_next_c = '1;
+        field_combo.OUTPUT_DATA.DataOUT.next = next_c;
+        field_combo.OUTPUT_DATA.DataOUT.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.OUTPUT_DATA.DataOUT.value <= 8'h0;
+        end else if(field_combo.OUTPUT_DATA.DataOUT.load_next) begin
+            field_storage.OUTPUT_DATA.DataOUT.value <= field_combo.OUTPUT_DATA.DataOUT.next;
+        end
+    end
+    assign hwif_out.OUTPUT_DATA.DataOUT.value = field_storage.OUTPUT_DATA.DataOUT.value;
+    // Field: registers.OUTPUT_DATA.DataOutputReady
+    always_comb begin
+        automatic logic [0:0] next_c = field_storage.OUTPUT_DATA.DataOutputReady.value;
+        automatic logic load_next_c = '0;
+        
+        // HW Write
+        next_c = hwif_in.OUTPUT_DATA.DataOutputReady.next;
+        load_next_c = '1;
+        field_combo.OUTPUT_DATA.DataOutputReady.next = next_c;
+        field_combo.OUTPUT_DATA.DataOutputReady.load_next = load_next_c;
+    end
+    always_ff @(posedge clk) begin
+        if(rst) begin
+            field_storage.OUTPUT_DATA.DataOutputReady.value <= 1'h0;
+        end else if(field_combo.OUTPUT_DATA.DataOutputReady.load_next) begin
+            field_storage.OUTPUT_DATA.DataOutputReady.value <= field_combo.OUTPUT_DATA.DataOutputReady.next;
+        end
+    end
+    assign hwif_out.OUTPUT_DATA.DataOutputReady.value = field_storage.OUTPUT_DATA.DataOutputReady.value;
 
     //--------------------------------------------------------------------------
     // Write response
@@ -532,9 +617,10 @@ module registers (
     assign readback_array[3][11:11] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.BER.value : '0;
     assign readback_array[3][19:12] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.density.value : '0;
     assign readback_array[3][27:20] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.BERGen.value : '0;
-    assign readback_array[3][31:28] = '0;
-    assign readback_array[4][7:0] = (decoded_reg_strb.OUTPUT_DATA && !decoded_req_is_wr) ? hwif_in.OUTPUT_DATA.DataOUT.next : '0;
-    assign readback_array[4][8:8] = (decoded_reg_strb.OUTPUT_DATA && !decoded_req_is_wr) ? hwif_in.OUTPUT_DATA.DataOutputReady.next : '0;
+    assign readback_array[3][28:28] = (decoded_reg_strb.INPUT_DATA && !decoded_req_is_wr) ? field_storage.INPUT_DATA.DataINReady.value : '0;
+    assign readback_array[3][31:29] = '0;
+    assign readback_array[4][7:0] = (decoded_reg_strb.OUTPUT_DATA && !decoded_req_is_wr) ? field_storage.OUTPUT_DATA.DataOUT.value : '0;
+    assign readback_array[4][8:8] = (decoded_reg_strb.OUTPUT_DATA && !decoded_req_is_wr) ? field_storage.OUTPUT_DATA.DataOutputReady.value : '0;
     assign readback_array[4][31:9] = '0;
 
     // Reduce the array

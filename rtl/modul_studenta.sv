@@ -34,7 +34,6 @@ module modul_studenta (
     input  logic [7:0] density,
     input  logic [7:0] BERGen,
 
-    input logic DataReady,
     output logic DataOutputReady
 );
 
@@ -43,6 +42,7 @@ import registers_pkg::*;
 localparam int MAX_WIDTH = 16; 
 
 registers_pkg::registers__out_t hwif_out;
+registers_pkg::registers__in_t hwif_in;
 
 // Main signals
 logic BCH_coding = 1'b0;
@@ -105,6 +105,9 @@ logic BCH_decoded_finished = 1'b0;
 
   // Handle data
   logic prevDataReady;
+  logic DataReady;
+
+  assign DataReady = hwif_out.INPUT_DATA.DataINReady.value;
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -191,17 +194,17 @@ begin
         else 
         begin
             if(DataReady == 1'b1 &&  prevDataReady == 1'b0) begin
-                BCH_coding <= BCH;
-                generateNoise <= Gauss;
-                randomGenerateErrors <= BER;
-                numberOfGenerateErrors <= BERGen;  
-                densityPar <= density;
+                BCH_coding <= hwif_out.INPUT_DATA.BCH.value;
+                generateNoise <= hwif_out.INPUT_DATA.Gauss.value;
+                randomGenerateErrors <= hwif_out.INPUT_DATA.BER.value;
+                numberOfGenerateErrors <= hwif_out.INPUT_DATA.BERGen.value;  
+                densityPar <= hwif_out.INPUT_DATA.density.value;
                 transmition_Finished <= 1'b1;
-                signal_input1 <= DataIN[7:4];
-                signal_input2 <= DataIN[3:0];
-                signal_input_comboined <= DataIN;
+                signal_input1 <= hwif_out.INPUT_DATA.DataIN.value[7:4];
+                signal_input2 <= hwif_out.INPUT_DATA.DataIN.value[3:0];
+                signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;
 
-                if(Gauss == 1'b1 ||BER == 1'b1 )
+                if(hwif_out.INPUT_DATA.Gauss.value == 1'b1 ||hwif_out.INPUT_DATA.BCH.value == 1'b1 )
                     begin
                         ena <= 1'b1;    
                     end
@@ -265,7 +268,7 @@ begin
     begin
         state <= IDLE;
 	end
-     else if(transmition_Finished == 1'b0) begin
+     else if(DataOutputReady == 1'b1) begin
              state <= IDLE;
     end   
     else begin
@@ -306,7 +309,7 @@ begin
         begin
             BCH_encoded_finished <= 1'b0;
         end
-     else if(transmition_Finished == 1'b0) begin
+     else if(DataOutputReady == 1'b1) begin
             BCH_encoded_finished <= 1'b0;
             
     end          
@@ -333,7 +336,7 @@ begin
         begin
             BCH_startNoise_finished <= 1'b0;
         end
-     else if(transmition_Finished == 1'b0) begin
+     else if(DataOutputReady == 1'b1) begin
             BCH_startNoise_finished <= 1'b0;
     end   
     else
@@ -363,7 +366,7 @@ always_ff @(posedge clk or posedge rst) begin
         current_iteration <= 0;
         encoded_signal_mask <= 0;
     end 
-    else if (transmition_Finished == 1'b0) begin
+    else if (DataOutputReady == 1'b1) begin
         BCH_startErrorGen_finished <= 1'b0;
         current_iteration <= 0;
         encoded_signal_mask <= 0;
@@ -450,7 +453,7 @@ begin
                 decoded_syndrome[i] <= 105'b0;
             end
         end
-    else if(transmition_Finished == 1'b0) begin
+    else if(DataOutputReady == 1'b1) begin
         BCH_decoded_finished <= 1'b0;
     end
     else
@@ -729,11 +732,11 @@ begin
         begin
              DataOutputReady <= 1'b0;
         end
-    else if(transmition_Finished == 1'b0) begin
-        DataOutputReady <= 1'b0;
-    end
     else
         begin
+            if(transmition_Finished == 1'b1) begin
+                DataOutputReady <= 1'b0;
+            end
             if(state == FINISHED && DataOutputReady == 1'b0)
             begin
                 if(generateNoise == 1'b1 || randomGenerateErrors == 1'b1) begin
@@ -761,6 +764,8 @@ begin
             end
         end
 end
+assign hwif_in.OUTPUT_DATA.DataOUT.next = DataOUT;
+assign hwif_in.OUTPUT_DATA.DataOutputReady.next = DataOutputReady;
 
 task decode_syndromes;
     input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
@@ -888,7 +893,8 @@ registers u_registers (
     .s_axil_rdata       (s_axil_rdata),
     .s_axil_rresp       (s_axil_rresp),
 
-    .hwif_out           (hwif_out)
+    .hwif_out           (hwif_out),
+    .hwif_in           (hwif_in)
 );
 
 endmodule

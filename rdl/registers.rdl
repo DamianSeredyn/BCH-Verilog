@@ -102,7 +102,14 @@ addrmap registers {
             desc = "BER generation parameter";
         } BERGen[27:20] = 0;
 
-        // 4 bity wolne (28–31)
+        field {
+            hw = rw;
+            sw = rw;
+            fieldwidth = 1;
+            desc = "DataINReady signal";
+        } DataINReady[28:28] = 0;
+
+        // 4 bity wolne (29–31)
 
     } INPUT_DATA @ 0xC;
 
@@ -111,14 +118,14 @@ addrmap registers {
         name = "OUTPUT_DATA";
 
         field {
-            hw = w;
+            hw = rw;
             sw = r;
             fieldwidth = 8;
             desc = "Data output bus";
         } DataOUT[7:0] = 0;
 
         field {
-            hw = w;
+            hw = rw;
             sw = r;
             fieldwidth = 1;
             desc = "Data output ready flag";

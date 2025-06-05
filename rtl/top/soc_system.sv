@@ -14,7 +14,6 @@ module soc_system (
     input   BER,
     input   [7:0] density,
     input   [7:0] BERGen,
-    input DataReady,
     output DataOutputReady,
       inout              HPS_CONV_USB_N,
       output      [14:0] HPS_DDR3_ADDR,
@@ -320,7 +319,6 @@ modul_studenta modul_studenta_u (
     .BER             ( BER            ),
     .density         ( density        ),
     .BERGen          ( BERGen         ),
-    .DataReady       ( DataReady      ),
     .DataOutputReady ( DataOutputReady)
 );
 
