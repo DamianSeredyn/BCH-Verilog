@@ -79,6 +79,8 @@ module determinant (
                     end
                 end else if (operation_counter == 3 && size == 2) begin
                         first_matrix_sum <= first_matrix_sum2[50:0];
+                        operation_counter <= operation_counter + 1'b1;
+                end else if (operation_counter == 4 && size == 2) begin
                         a <= 51'b0;
                         b <= 51'b0;
                         operation_counter <= 6'b0;
