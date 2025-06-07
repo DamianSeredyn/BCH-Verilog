@@ -69,15 +69,18 @@ logic EncoderReady1;
 logic EncoderReady2;
 
 // Decoding
-logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
-logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
+logic [15:0] syndrome_coding = 16'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [15:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
-logic [104:0] decoded_signal = 105'b0; // final decoded signal
-logic [104:0] decoded_signal3; // final decoded signal
-logic start_decoding = 1'b1;
-logic [104:0] test_variable1 [3:0][3:0];
-logic [104:0] test_variable2 [3:0];
-logic [104:0] test_variable3;
+logic [15:0] decoded_signal; // final decoded signal
+logic [15:0] decoded_signal3; // final decoded signal
+logic start_decoding = 1'b0;
+logic finished_decoding;
+logic [50:0] test_variable1 [3:0][3:0];
+logic [15:0] test_variable2 [3:0];
+logic [50:0] test_variable3;
+logic [5:0] counter = 6'b0; //DELETE THIS, ONLY FOR TESTING
+logic test = 1'b0;
 
 
 // flags ending
@@ -170,14 +173,15 @@ gng_ctg #(
         .clk(clk),
         .rst(rst),
         .syndrome_coding2(syndrome_coding),
-        //.decoded_syndrome2(decoded_syndrome),
+        .decoded_syndrome2(decoded_syndrome),
         .BCH_decoded_finished2(BCH_decoded_finished),
         .state2(start_decoding),
         .correcting_capability2(correcting_capability),
-        .decoded_signal2(decoded_signal3)//,
-        // .test1(test_variable1),
-        // .test2(test_variable2),
-        // .test3(test_variable3)
+        .decoded_signal2(decoded_signal3),
+        .test1(test_variable1),
+        .test2(test_variable2),
+        .test3(test_variable3),
+        .finished_decoding2(finished_decoding)
     );
 
 typedef enum logic[2:0]{
@@ -308,7 +312,7 @@ begin
             begin
                 state <= DECODING_BCH;
             end
-            else
+            else if(test == 1'b1)
             begin
                 state <= FINISHED;
             end                
@@ -458,9 +462,9 @@ always_ff @(posedge clk or posedge rst)
 begin
     if(rst == 1'b1)
         begin
-            BCH_decoded_finished <= 1'b0;
-            correcting_capability <= 3;
-            decoded_signal <= 105'b0;
+            // BCH_decoded_finished <= 1'b0;
+            // correcting_capability <= 3;
+            // decoded_signal <= 105'b0;
         end
     else if(DataOutputReady == 1'b1) begin
         BCH_decoded_finished <= 1'b0;
@@ -469,19 +473,17 @@ begin
         begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
+                counter <= counter + 1;
                 start_decoding = 1'b1;
-                start_decoding = 1'b0;
-                decoded_signal = decoded_signal3;
-                BCH_decoded_finished = 1'b1;
+            if (finished_decoding == 1'b1) begin
+                decoded_signal <= decoded_signal3;
+                BCH_decoded_finished <= 1'b1;
+                start_decoding <= 1'b0;
+                test = 1'b1;
+                end
             end
         end
 end
-
-//zmienne do testów, później pewnie będzie można usunąć
-
-
-
-
 
 
 always_ff @(posedge clk or posedge rst)

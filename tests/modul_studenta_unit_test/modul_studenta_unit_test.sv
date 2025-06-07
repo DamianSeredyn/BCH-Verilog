@@ -73,7 +73,6 @@ module modul_studenta_unit_test;
       logic [7:0] density;
       logic [7:0] BERGen;
       logic DataOutputReady;
-      logic DataReady;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -158,7 +157,6 @@ module modul_studenta_unit_test;
         .density         ( density        ),
         .BERGen          ( BERGen         ),
         .Gauss           ( Gauss          ),
-        .DataReady       ( DataReady      ),
         .DataOutputReady ( DataOutputReady)
 
         
@@ -328,7 +326,6 @@ endfunction
     BCH = 1'b0;
     prev_state = dut.state;
     $display("Data input = 01010101");
-    DataReady = 1'b1;
     for (int i = 0; i < 2000; i++) begin
         @(posedge clk_100mhz);
         if (dut.state !== prev_state) begin
@@ -372,7 +369,7 @@ endfunction
             if (wait_cycles > 1000) begin
                 $display("Timeout waiting for BCH_encoded_finished");
                 //`FAIL_UNLESS(0)
-            break;
+                break;
             end
         end
         $display("state of BCH_decoded = %0b", dut.BCH_decoded_finished);
@@ -395,7 +392,7 @@ endfunction
         $display("\n");
         $display("signal output = %0b", dut.decoded_signal);
         $display("\n");
-        $display("final correcting capability = %0b", dut.correcting_capability);
+        $display("final correcting capability = %0b", dut.counter);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[0], 2'b10);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[1], 3'b100);
         `FAIL_UNLESS_EQUAL(dut.decoded_syndrome[2], 9'b100000000);

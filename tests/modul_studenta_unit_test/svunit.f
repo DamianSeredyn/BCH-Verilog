@@ -8,6 +8,9 @@
 ../../../rtl/clock_div.sv
 ../../../rtl/BCH_encoder.sv
 ../../../rtl/BCH_decoder.sv
+../../../quartus/mnozenie.v
+../../../quartus/mnozenie/mnozenie_0002.v
+/tools/intel/quartus/standard/22.1/quartus/eda/sim_lib/altera_lnsim.sv
 ../../../rtl/Gauss/gng.v
 ../../../rtl/Gauss/gng_ctg.v
 ../../../rtl/Gauss/gng_coef.v
