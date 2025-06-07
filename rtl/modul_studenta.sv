@@ -79,7 +79,7 @@ logic finished_decoding;
 logic [50:0] test_variable1 [3:0][3:0];
 logic [15:0] test_variable2 [3:0];
 logic [50:0] test_variable3;
-logic [5:0] counter = 6'b0; //DELETE THIS, ONLY FOR TESTING
+logic [50:0] counter = 51'b0; //DELETE THIS, ONLY FOR TESTING
 logic test = 1'b0;
 
 

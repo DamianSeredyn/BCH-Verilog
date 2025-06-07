@@ -26,21 +26,47 @@ module BCH_decoder (
     logic [50:0] first_matrix_sum3;
     logic [15:0] where_errors2 [3:0];// pokazuje na których miejscach są błędy
     logic [4:0] size = 3; // changed to const because of errors
+    logic [3:0] multiply_delay = 4'b0;
     logic matrix_finished = 1'b0;
     logic start_matrix = 1'b0;
     logic start_error_correction = 1'b0;
+    logic multiply_delay_start = 1'b0;
+    logic multiply_delay_finished = 1'b0;
     //logic [15:0] decoded_syndrome2 [8:0]; // zakomentowac do testowania
 
-    logic [50:0] a;
-    logic [50:0] b;
-    logic [101:0] wynik_mnozenia;
-    mnozenie mno(
-        .result(wynik_mnozenia),
-        .dataa_0(a),
-        .datab_0(b),
-        .clock0(clk),
-        .aclr0(rst)
+    logic [50:0] det_first_matrix [3:0][3:0];
+    logic        start_determinant = 1'b0;
+    logic [50:0] det_first_matrix_sum;
+    logic        finished_determinant;
+
+
+    determinant det(
+        .clk(clk),
+        .rst(rst),
+        .first_matrix(det_first_matrix),
+        .size(size),
+        .start_determinant(start_determinant),
+        .first_matrix_sum(det_first_matrix_sum),
+        .finished_determinant(finished_determinant)
     );
+
+    always_ff @(posedge clk or posedge rst)
+    begin
+        if (rst == 1'b1) begin 
+            multiply_delay_start = 1'b0;
+            multiply_delay_finished = 1'b0;
+            multiply_delay = 4'b0;
+        end else begin
+            if (multiply_delay_start == 1'b1) begin
+                multiply_delay <= multiply_delay + 1;
+            end
+            if (multiply_delay == 10) begin
+                multiply_delay <= 4'b0;
+                multiply_delay_start <= 1'b0;
+                multiply_delay_finished <= 1'b1;
+            end
+        end
+    end
 
     always_ff @(posedge clk or posedge rst)
     begin
@@ -89,7 +115,7 @@ module BCH_decoder (
                     start_error_correction = 1'b0;
                     first_matrix_sum3 = 51'b0;
                     start_matrix = 1'b0;
-                    counter = 6'b0;
+                    counter <= 6'b0;
                     matrix_finished = 1'b0;
                     for (logic [3:0] i = 0; i < 4 ;i++ ) begin
                         where_errors2[i] = 16'b0;
@@ -119,7 +145,6 @@ module BCH_decoder (
         end
         else if (BCH_decoded_finished2 == 1'b0 && state2 == 1'b1 && start_matrix == 1'b1) 
         begin
-            counter <= counter + 1;
             if (counter == 0)begin
                 decoded_syndrome4 <= decoded_syndrome2;
                 first_matrix_sum3 = 51'b0;
@@ -127,26 +152,36 @@ module BCH_decoder (
                 second_matrix_sum3[1] = 51'b0;
                 second_matrix_sum3[2] = 51'b0;
                 second_matrix_sum3[3] = 51'b0;
+                counter <= counter + 1;
             end
 
             //create matrix
-            if (counter == 2)begin
+            if (counter == 2 || counter == 3 || counter == 1)begin
                 for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
                     for (logic [4:0] j = 0; j < 4 ; j++ ) begin //changed size to 4
                     first_matrix3[i][j] = decoded_syndrome4[j+i]; 
                     end
                     second_matrix[i] = decoded_syndrome4[size+i];
                 end
-                first_matrix_determinant(first_matrix3,size,first_matrix_sum3); // determinant calculation. Jeżeli jest mniej niż założona liczba błędów to wyjdzie 0, i powinniśmy spróbować innego rozmiaru
+                det_first_matrix <= first_matrix3;
+                start_determinant <= 1'b1;
+                //first_matrix_determinant(first_matrix3,size,first_matrix_sum3); // determinant calculation. Jeżeli jest mniej niż założona liczba błędów to wyjdzie 0, i powinniśmy spróbować innego rozmiaru
+                if (finished_determinant == 1'b1) begin
+                    first_matrix_sum3 = det_first_matrix_sum; 
+                    start_determinant <= 1'b0;
+                    counter <= counter + 1;
+                    start_determinant <= 1'b0;
+                end
             end
             
             if (counter == 4)begin
                 syndromes(first_matrix_sum3,first_matrix_sum3); // syndrome from determinant
-                //powyżej tego momentu wszystko na pewno działa a poniżej działa dla równo 2 błędów. Nad wyzwoleniem matrix napisałem co trzeba jako tako zrobić
+                counter <= counter + 1;
             end
 
             if (counter == 5)begin
                 minor(first_matrix3,size,first_matrix3); // działa do 3 błedów
+                counter <= counter + 1;
             end
 
             if (counter == 6)begin
@@ -158,6 +193,7 @@ module BCH_decoder (
                     error_correction2[i] = 16'b0;
                     syndromes(second_matrix_sum3[i],second_matrix_sum3[i]);
                 end
+                counter <= counter + 1;
             end
             if (counter == 7)begin
                 if(size == 2 && first_matrix3[0][0] === 51'bx)
@@ -166,6 +202,7 @@ module BCH_decoder (
                     lower_correcting_capability2 = 1'b1;
                 end
                 else error_place(second_matrix_sum3,size,where_errors2); // znalezienie na których miejscach są błędy
+                counter <= counter + 1;
             end
             if (counter == 8)begin
                 error_correction2 = where_errors2;
@@ -176,6 +213,9 @@ module BCH_decoder (
                 start_matrix = 1'b0;
                 counter <= 0;
             end
+                test1 <= first_matrix3;
+                test2 <= error_correction2;
+                test3 <= first_matrix_sum3;
         end
     end
 
@@ -278,84 +318,80 @@ module BCH_decoder (
     endtask
 
 
-    task first_matrix_determinant;
-    input [50:0] first_matrix [3:0][3:0];
-    input [4:0] size;
-    output [50:0] first_matrix_sum;
-    logic [50:0] first_matrix_sum2;
-    logic [4:0] start_row;
-    logic [4:0] start_column;
-    start_row = 5'b0;
-    start_column = 5'b0;
-    begin
-        first_matrix_sum2 = 51'b0;
-        if (size == 2) begin
-            first_matrix_sum2 = first_matrix[0][0] * first_matrix[1][1];
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[0][1] * first_matrix[1][0]);
-        end
-        else if(size == 3)begin
-            first_matrix_sum2 = Sarrus(first_matrix,0,0,0);
-        end
-        else if(size == 4)begin
-            first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,1);
-            first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,2);
-            first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,3);
-            first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,4);
-        end
-        first_matrix_sum = first_matrix_sum2;
-    end
-    endtask
+    // task first_matrix_determinant;
+    // input [50:0] first_matrix [3:0][3:0];
+    // input [4:0] size;
+    // output [50:0] first_matrix_sum;
+    // logic [50:0] first_matrix_sum2;
+    // begin
+    //     first_matrix_sum2 = 51'b0;
+    //     if (size == 2) begin
+    //         first_matrix_sum2 = first_matrix[0][0] * first_matrix[1][1];
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[0][1] * first_matrix[1][0]);
+    //     end
+    //     else if(size == 3)begin
+    //         first_matrix_sum2 = Sarrus(first_matrix,0,0,0);
+    //     end
+    //     else if(size == 4)begin
+    //         first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,1);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,2);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,3);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ Sarrus(first_matrix,1,0,4);
+    //     end
+    //     first_matrix_sum = first_matrix_sum2;
+    // end
+    // endtask
 
-    function [50:0] Sarrus;
-    input [50:0] first_matrix [3:0][3:0];
-    input [4:0] start_row;
-    input [4:0] start_column;
-    input [4:0] skip_column;
-    logic [50:0] first_matrix_sum2;
-    logic [2:0] add1;
-    logic [2:0] add2;
-    logic [2:0] add3;
-    first_matrix_sum2 = 51'b0;
-    begin
-        if (skip_column == 0) begin
-            add1 = 1;
-            add2 = 2;
-            add3 = 0;
-        end else if (skip_column == 1) begin
-            add1 = 2;
-            add2 = 3;
-            add3 = 1;
-        end else if (skip_column == 2) begin
-            add1 = 2;
-            add2 = 3;
-            add3 = 0;
-        end else if (skip_column == 3) begin
-            add1 = 1;
-            add2 = 3;
-            add3 = 0;
-        end else if (skip_column == 4) begin
-            add1 = 1;
-            add2 = 2;
-            add3 = 0;
-        end
-        if (skip_column == 0)begin
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add2]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add3]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add1]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add3]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add2]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add1]);
-        end else begin
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add2] * first_matrix[0][skip_column-1]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add3] * first_matrix[0][skip_column-1]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add1] * first_matrix[0][skip_column-1]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add3] * first_matrix[0][skip_column-1]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add2] * first_matrix[0][skip_column-1]);
-            first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add1] * first_matrix[0][skip_column-1]);
-        end
-        Sarrus = first_matrix_sum2;
-    end
-    endfunction
+    // function [50:0] Sarrus;
+    // input [50:0] first_matrix [3:0][3:0];
+    // input [4:0] start_row;
+    // input [4:0] start_column;
+    // input [4:0] skip_column;
+    // logic [50:0] first_matrix_sum2;
+    // logic [2:0] add1;
+    // logic [2:0] add2;
+    // logic [2:0] add3;
+    // first_matrix_sum2 = 51'b0;
+    // begin
+    //     if (skip_column == 0) begin
+    //         add1 = 1;
+    //         add2 = 2;
+    //         add3 = 0;
+    //     end else if (skip_column == 1) begin
+    //         add1 = 2;
+    //         add2 = 3;
+    //         add3 = 1;
+    //     end else if (skip_column == 2) begin
+    //         add1 = 2;
+    //         add2 = 3;
+    //         add3 = 0;
+    //     end else if (skip_column == 3) begin
+    //         add1 = 1;
+    //         add2 = 3;
+    //         add3 = 0;
+    //     end else if (skip_column == 4) begin
+    //         add1 = 1;
+    //         add2 = 2;
+    //         add3 = 0;
+    //     end
+    //     if (skip_column == 0)begin
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add2]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add3]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add1]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add3]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add2]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add1]);
+    //     end else begin
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add2] * first_matrix[0][skip_column-1]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add3] * first_matrix[0][skip_column-1]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add1] * first_matrix[0][skip_column-1]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add2] * first_matrix[start_row+1][start_column+add1] * first_matrix[start_row+2][start_column+add3] * first_matrix[0][skip_column-1]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add1] * first_matrix[start_row+1][start_column+add3] * first_matrix[start_row+2][start_column+add2] * first_matrix[0][skip_column-1]);
+    //         first_matrix_sum2 = first_matrix_sum2 ^ (first_matrix[start_row][start_column+add3] * first_matrix[start_row+1][start_column+add2] * first_matrix[start_row+2][start_column+add1] * first_matrix[0][skip_column-1]);
+    //     end
+    //     Sarrus = first_matrix_sum2;
+    // end
+    // endfunction
 
     task decode_syndromes;
     input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
@@ -368,7 +404,7 @@ module BCH_decoder (
         input_data = 105'b0;
         for ( loop = 1; loop <= 8; loop++) // changed size(syndrome_number) to 8
         begin
-            for (integer i = 0; i < 16; i++)
+            for (integer i = 0; i < 16; i++) // TRZEBA TO NAPRAWIĆ, KOD Z INTEGEREM SIE NIE ZSYTENZUJE A BEZ NIEGO NIE DZIALA
             begin
               if (data[i] && i*loop < 105)
                 input_data[i*loop] = 1'b1;

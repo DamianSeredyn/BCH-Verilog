@@ -7,6 +7,7 @@
 ../../../rtl/Uart_module.sv
 ../../../rtl/clock_div.sv
 ../../../rtl/BCH_encoder.sv
+../../../rtl/BCH_determinant.sv
 ../../../rtl/BCH_decoder.sv
 ../../../quartus/mnozenie.v
 ../../../quartus/mnozenie/mnozenie_0002.v

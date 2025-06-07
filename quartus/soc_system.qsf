@@ -66,6 +66,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/modul_studenta.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Uart_module.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_encoder.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_decoder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_determinant.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/clock_div.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng.v
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_ctg.v
@@ -461,6 +462,6 @@ set_instance_assignment -name PLL_COMPENSATION_MODE DIRECT -to u_hps|hps|hps_0|h
 
 
 
-set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
 set_global_assignment -name QIP_FILE mnozenie.qip
 set_global_assignment -name SIP_FILE mnozenie.sip
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
