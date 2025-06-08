@@ -68,6 +68,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_encoder.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_decoder.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_determinant.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_minor.sv
+set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/BCH_error_place.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/clock_div.sv
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng.v
 set_global_assignment -name SYSTEMVERILOG_FILE ../rtl/Gauss/gng_ctg.v

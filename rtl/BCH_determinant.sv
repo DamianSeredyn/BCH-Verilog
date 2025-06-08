@@ -45,8 +45,6 @@ module determinant (
     end
 
     logic [101:0] first_matrix_sum2;
-    logic [4:0] start_row;
-    logic [4:0] start_column;
     logic [5:0] operation_counter = 6'b0;
 
     always_ff @( posedge clk or posedge rst ) begin : first_matrix_determinant

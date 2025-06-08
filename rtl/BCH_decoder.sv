@@ -66,6 +66,21 @@ module BCH_decoder (
         .finished_minor(finished_minor)
     );
 
+    logic [50:0] err_second_matrix_sum [3:0];
+    logic start_error_place = 1'b0;
+    logic [15:0] err_where_errors [3:0];
+    logic finished_error_place;
+    
+    error_place err(
+        .clk(clk),
+        .rst(rst),
+        .second_matrix_sum(err_second_matrix_sum),
+        .size(size),
+        .start_error_place(start_error_place),
+        .where_errors(err_where_errors),
+        .finished_error_place(finished_error_place)
+    );
+
     always_ff @(posedge clk or posedge rst)
     begin
         if (rst == 1'b1) begin 
@@ -104,9 +119,7 @@ module BCH_decoder (
 
                 if (decoded_syndrome2[0] != 0)begin
                 start_matrix = 1'b1;
-                end else begin
-                    start_error_correction = 1'b1;
-                end
+                end 
 
                 if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b1 && matrix_finished == 1'b1 && lowered_correcting_capability == 1'b0)begin
                     size = 2;
@@ -122,7 +135,7 @@ module BCH_decoder (
                 end
 
             
-                if (start_error_correction == 1'b1)begin
+                if (start_error_correction == 1'b1 || decoded_syndrome2[0] == 0)begin
                     decoded_signal2 = syndrome_coding2;
                     for (logic [3:0] k = 0;k < 3 ;k++ ) begin
                         if (error_correction2[k] !== 16'bx)
@@ -167,14 +180,13 @@ module BCH_decoder (
         end
         else if (BCH_decoded_finished2 == 1'b0 && state2 == 1'b1 && start_matrix == 1'b1) 
         begin
-            if (counter == 0)begin
+            if (counter === 6'bx || counter == 6'b0)begin
                 decoded_syndrome4 <= decoded_syndrome2;
-                first_matrix_sum3 = 51'b0;
                 second_matrix_sum3[0] = 51'b0;
                 second_matrix_sum3[1] = 51'b0;
                 second_matrix_sum3[2] = 51'b0;
                 second_matrix_sum3[3] = 51'b0;
-                counter <= counter + 1;
+                counter <= 1;
             end
 
             //create matrix
@@ -229,13 +241,22 @@ module BCH_decoder (
                 counter <= counter + 1;
             end
             if (counter == 7)begin
-                if(size == 2 && first_matrix3[0][0] === 51'bx)
+                if(size == 2 && first_matrix3[0][0] === 51'bx)begin
                     where_errors2[0] = decoded_syndrome4[0]; // tylko dla 1 błędu
-                else if (size == 3 && first_matrix3[0][0] === 51'bx) begin
+                    counter <= counter + 1;
+                end else if (size == 3 && first_matrix3[0][0] === 51'bx) begin
                     lower_correcting_capability2 = 1'b1;
+                    counter <= counter + 1;
+                end else begin 
+                //error_place(second_matrix_sum3,size,where_errors2); // znalezienie na których miejscach są błędy
+                    start_error_place <= 1'b1;
+                    err_second_matrix_sum <= second_matrix_sum3;
+                    if (finished_error_place == 1'b1) begin
+                        where_errors2 <= err_where_errors;
+                        start_error_place <= 1'b0;
+                        counter <= counter + 1;
+                    end
                 end
-                else error_place(second_matrix_sum3,size,where_errors2); // znalezienie na których miejscach są błędy
-                counter <= counter + 1;
             end
             if (counter == 8)begin
                 error_correction2 = where_errors2;
@@ -247,66 +268,66 @@ module BCH_decoder (
                 counter <= 0;
             end
                 // test1 <= first_matrix3;
-                // test2 <= error_correction2;
+                // test2 <= err_where_errors;
                 // test3 <= first_matrix_sum3;
         end
     end
 
 
-    task error_place;// działa tylko dla macierzy 2x2 czyli do 2 błędów
-    input [50:0] second_matrix_sum [3:0];
-    input [4:0] size;
-    output [15:0] where_errors [3:0];
-    logic [50:0] second_matrix_sum2 [3:0];
-    logic [15:0] possible_values [15:0];
-    logic [15:0] value_holder;
-    begin
-        second_matrix_sum2 = second_matrix_sum;
-        //tworzenie wartości kolejnych zmiennych
-        for (logic [5:0] i = 6'b0; i < 16; i++)
-        begin
-            if (i == 0) possible_values[i] = 16'b10;
-            else
-            possible_values[i] = 16'b10 << i;
-        end
+    // task error_place;// działa tylko dla macierzy 2x2 czyli do 2 błędów
+    // input [50:0] second_matrix_sum [3:0];
+    // input [4:0] size;
+    // output [15:0] where_errors [3:0];
+    // logic [50:0] second_matrix_sum2 [3:0];
+    // logic [15:0] possible_values [15:0];
+    // logic [15:0] value_holder;
+    // begin
+    //     second_matrix_sum2 = second_matrix_sum;
+    //     //tworzenie wartości kolejnych zmiennych
+    //     for (logic [5:0] i = 6'b0; i < 16; i++)
+    //     begin
+    //         if (i == 0) possible_values[i] = 16'b1;
+    //         else if (i == 1) possible_values[i] = 16'b10;
+    //         else possible_values[i] = 16'b10 << i-1;
+    //     end
 
-        //Dla 2 błędów mnożymy 2 możliwe wartości i muszą wyjść second_matrix_sum2[0] i po ich skróceniu muszą być równe second_matrix_sum2[1]. Jest to pokazane w filmiku pod koniec
-        if (size == 2)begin
-            for (logic [5:0] j = 0; j < 16; j++) 
-            begin
-                for (logic [5:0] i = 0; i < 16; i++)
-                begin
-                    if ((possible_values[i] * possible_values[j]) == second_matrix_sum2[0]) begin
-                        syndromes((possible_values[i] ^ possible_values[j]),value_holder);
-                        if (value_holder == second_matrix_sum2[1]) begin
-                            where_errors[0] = possible_values[i];
-                            where_errors[1] = possible_values[j];
-                            break;
-                        end
-                    end
-                end
-            end
-        end else if(size == 3)begin
-            for (logic [5:0] j = 0; j < 16; j++) begin
-                for (logic [5:0] i = 0; i < 16; i++)begin
-                    for (logic [5:0] k = 0; k < 16;k++ ) begin
-                        if ((possible_values[i] * possible_values[j] * possible_values[k]) == second_matrix_sum2[0]) begin
-                            syndromes((possible_values[i] ^ possible_values[j] ^ possible_values[k]),value_holder);
-                            if (value_holder == second_matrix_sum2[2]) begin
-                                syndromes(((possible_values[i] * possible_values[j]) ^ (possible_values[i] * possible_values[k]) ^ (possible_values[j] * possible_values[k])),value_holder);
-                                if (value_holder == second_matrix_sum2[1]) begin
-                                    where_errors[0] = possible_values[i];
-                                    where_errors[1] = possible_values[j];
-                                    where_errors[2] = possible_values[k];
-                                end 
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-    endtask
+    //     //Dla 2 błędów mnożymy 2 możliwe wartości i muszą wyjść second_matrix_sum2[0] i po ich skróceniu muszą być równe second_matrix_sum2[1]. Jest to pokazane w filmiku pod koniec
+    //     if (size == 2)begin
+    //         for (logic [5:0] j = 0; j < 16; j++) 
+    //         begin
+    //             for (logic [5:0] i = 0; i < 16; i++)
+    //             begin
+    //                 if ((possible_values[i] * possible_values[j]) == second_matrix_sum2[0]) begin
+    //                     syndromes((possible_values[i] ^ possible_values[j]),value_holder);
+    //                     if (value_holder == second_matrix_sum2[1]) begin
+    //                         where_errors[0] = possible_values[i];
+    //                         where_errors[1] = possible_values[j];
+    //                         break;
+    //                     end
+    //                 end
+    //             end
+    //         end
+    //     end else if(size == 3)begin
+    //         for (logic [5:0] j = 0; j < 16; j++) begin
+    //             for (logic [5:0] i = 0; i < 16; i++)begin
+    //                 for (logic [5:0] k = 0; k < 16;k++ ) begin
+    //                     if ((possible_values[i] * possible_values[j] * possible_values[k]) == second_matrix_sum2[0]) begin
+    //                         syndromes((possible_values[i] ^ possible_values[j] ^ possible_values[k]),value_holder);
+    //                         if (value_holder == second_matrix_sum2[2]) begin
+    //                             syndromes(((possible_values[i] * possible_values[j]) ^ (possible_values[i] * possible_values[k]) ^ (possible_values[j] * possible_values[k])),value_holder);
+    //                             if (value_holder == second_matrix_sum2[1]) begin
+    //                                 where_errors[0] = possible_values[i];
+    //                                 where_errors[1] = possible_values[j];
+    //                                 where_errors[2] = possible_values[k];
+    //                             end 
+    //                         end
+    //                     end
+    //                 end
+    //             end
+    //         end
+    //     end
+    // end
+    // endtask
 
     // task minor;
     // input [50:0] first_matrix [3:0][3:0];

@@ -366,7 +366,7 @@ endfunction
         begin
             @(posedge clk_100mhz);
             wait_cycles++;
-            if (wait_cycles > 1000) begin
+            if (wait_cycles > 10000) begin
                 $display("Timeout waiting for BCH_encoded_finished");
                 //`FAIL_UNLESS(0)
                 break;
