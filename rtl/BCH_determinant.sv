@@ -25,21 +25,29 @@ module determinant (
     logic multiply_delay_start = 1'b0;
     logic multiply_delay_finished = 1'b0;
     logic [3:0] multiply_delay = 4'b0;
+    logic multiply_in_progress;
 
     always_ff @(posedge clk or posedge rst)
     begin
-        if (rst == 1'b1) begin 
-            multiply_delay_start <= 1'b0;
+        if (rst) begin
+            multiply_in_progress <= 1'b0;
+            multiply_delay <= 4'd0;
             multiply_delay_finished <= 1'b0;
-            multiply_delay <= 4'b0;
         end else begin
-            if (multiply_delay_start == 1'b1) begin
-                multiply_delay <= multiply_delay + 1;
-            end
-            if (multiply_delay == 11) begin
-                multiply_delay <= 4'b0;
-                multiply_delay_start <= 1'b0;
-                multiply_delay_finished <= 1'b1;
+            if (multiply_delay_start && !multiply_in_progress) begin
+                multiply_in_progress <= 1'b1;
+                multiply_delay <= 4'd1;  
+                multiply_delay_finished <= 1'b0;
+            end else if (multiply_in_progress) begin
+                if (multiply_delay == 11) begin
+                    multiply_in_progress <= 1'b0;
+                    multiply_delay_finished <= 1'b1;
+                    multiply_delay <= 4'd0;
+                end else begin
+                    multiply_delay <= multiply_delay + 1;
+                end
+            end else begin
+                multiply_delay_finished <= 1'b0;
             end
         end
     end
@@ -62,7 +70,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 2 && size == 2) begin
@@ -72,7 +80,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= first_matrix_sum2 ^ wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 3 && size == 2) begin
@@ -89,7 +97,7 @@ module determinant (
                         b <= first_matrix[1][1];
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 2 && size == 3) begin
@@ -99,7 +107,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 3 && size == 3) begin
@@ -108,7 +116,7 @@ module determinant (
                         b <= first_matrix[1][2];
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 4 && size == 3) begin
@@ -118,7 +126,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= first_matrix_sum2 ^ wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 5 && size == 3) begin
@@ -127,7 +135,7 @@ module determinant (
                         b <= first_matrix[1][0];
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 6 && size == 3) begin
@@ -137,7 +145,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= first_matrix_sum2 ^ wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 7 && size == 3) begin
@@ -146,7 +154,7 @@ module determinant (
                         b <= first_matrix[1][1];
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 8 && size == 3) begin
@@ -156,7 +164,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= first_matrix_sum2 ^ wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 9 && size == 3) begin
@@ -165,7 +173,7 @@ module determinant (
                         b <= first_matrix[1][0];
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 10 && size == 3) begin
@@ -175,7 +183,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= first_matrix_sum2 ^ wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 11 && size == 3) begin
@@ -184,7 +192,7 @@ module determinant (
                         b <= first_matrix[1][2];
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 12 && size == 3) begin
@@ -194,7 +202,7 @@ module determinant (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         first_matrix_sum2 <= first_matrix_sum2 ^ wynik_mnozenia;
-                        multiply_delay_finished <= 1'b0;
+                        multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
                     end
                 end else if (operation_counter == 13 && size == 3) begin

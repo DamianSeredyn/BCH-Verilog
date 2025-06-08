@@ -33,6 +33,8 @@ module BCH_decoder (
     logic multiply_delay_start = 1'b0;
     logic multiply_delay_finished = 1'b0;
     logic lowered_correcting_capability = 1'b0;
+    logic matrix_finished2 = 1'b0;
+    logic blocker = 1'b0;
     //logic [15:0] decoded_syndrome2 [8:0]; // zakomentowac do testowania
 
     logic [50:0] det_first_matrix [3:0][3:0];
@@ -123,14 +125,14 @@ module BCH_decoder (
 
                 if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b1 && matrix_finished == 1'b1 && lowered_correcting_capability == 1'b0)begin
                     size = 2;
-                    start_matrix = 1'b1;
-                    matrix_finished = 1'b0;
-                    lowered_correcting_capability = 1'b1;
+                    start_matrix = 1'b0;
+                    //matrix_finished = 1'b0;
+                    lowered_correcting_capability <= 1'b1;
                 end else if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b0 && matrix_finished == 1'b1) begin
                     start_error_correction = 1'b1;
                 end
 
-                if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b1 && matrix_finished == 1'b1 && size == 2)begin
+                if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b1 && matrix_finished == 1'b1 && size == 2 && blocker == 1'b1)begin
                     start_error_correction = 1'b1;
                 end
 
@@ -144,15 +146,10 @@ module BCH_decoder (
                     if (error_correction2[0] === 16'bx)begin
                     // dodać jakąś flagę, że mamy więcej błędów niż kodowanie przewiduje 
                     end
+                    lowered_correcting_capability <= 1'b0;
                     finished_decoding2 = 1'b1;
                     start_error_correction = 1'b0;
-                    first_matrix_sum3 = 51'b0;
                     start_matrix = 1'b0;
-                    counter <= 6'b0;
-                    matrix_finished = 1'b0;
-                    for (logic [3:0] i = 0; i < 4 ;i++ ) begin
-                        where_errors2[i] = 16'b0;
-                    end
                 end
 
                 //to see decoded syndrome comment the lines below
@@ -180,13 +177,18 @@ module BCH_decoder (
         end
         else if (BCH_decoded_finished2 == 1'b0 && state2 == 1'b1 && start_matrix == 1'b1) 
         begin
-            if (counter === 6'bx || counter == 6'b0)begin
+            if (lowered_correcting_capability == 1'b1 && blocker == 1'b0)begin
+                blocker <= 1'b1;
+                matrix_finished = 1'b0;
+            end
+
+            if (counter == 6'b0)begin
                 decoded_syndrome4 <= decoded_syndrome2;
                 second_matrix_sum3[0] = 51'b0;
                 second_matrix_sum3[1] = 51'b0;
                 second_matrix_sum3[2] = 51'b0;
                 second_matrix_sum3[3] = 51'b0;
-                counter <= 1;
+                counter <= counter + 1;
             end
 
             //create matrix
@@ -264,12 +266,14 @@ module BCH_decoder (
                 test2 <= error_correction2;
                 test3 <= first_matrix_sum3;
                 matrix_finished = 1'b1;
-                start_matrix = 1'b0;
                 counter <= 0;
             end
                 // test1 <= first_matrix3;
                 // test2 <= err_where_errors;
                 // test3 <= first_matrix_sum3;
+        end else begin
+            matrix_finished = 1'b0;
+            blocker <= 1'b0;
         end
     end
 
