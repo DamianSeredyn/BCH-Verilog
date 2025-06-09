@@ -21,20 +21,23 @@ module BCH_decoder (
     logic [5:0] counter = 6'b0;
     logic [15:0] decoded_syndrome4 [8:0];
     logic [50:0] first_matrix3 [3:0][3:0];// macierz z lewej strony równania
+    logic [50:0] first_matrix3_for_syndrome [3:0][3:0];
     logic [15:0] second_matrix [3:0];// macierz z prawej strony równania
     logic [50:0] second_matrix_sum3 [3:0];
+    logic [50:0] second_matrix_sum3_for_syndrome [3:0];
     logic [50:0] first_matrix_sum3;
+    logic [50:0] first_matrix_sum3_for_syndrome;
+    logic [50:0] divided_signal;
     logic [15:0] where_errors2 [3:0];// pokazuje na których miejscach są błędy
     logic [4:0] size = 3; // changed to const because of errors
-    logic [3:0] multiply_delay = 4'b0;
+    logic [15:0] recilocal;
     logic matrix_finished = 1'b0;
     logic start_matrix = 1'b0;
     logic start_error_correction = 1'b0;
-    logic multiply_delay_start = 1'b0;
-    logic multiply_delay_finished = 1'b0;
     logic lowered_correcting_capability = 1'b0;
     logic matrix_finished2 = 1'b0;
     logic blocker = 1'b0;
+    logic [2:0] k = 0;
     //logic [15:0] decoded_syndrome2 [8:0]; // zakomentowac do testowania
 
     logic [50:0] det_first_matrix [3:0][3:0];
@@ -83,20 +86,77 @@ module BCH_decoder (
         .finished_error_place(finished_error_place)
     );
 
+    logic [50:0] a;
+    logic [50:0] b;
+    logic [101:0] wynik_mnozenia;
+    mnozenie mno(
+        .result(wynik_mnozenia),
+        .dataa_0(a),
+        .datab_0(b),
+        .clock0(clk),
+        .aclr0(rst)
+    );
+
+    logic [50:0] a2;
+    logic [50:0] b2;
+    logic [101:0] wynik_mnozenia2;
+    mnozenie mno2(
+        .result(wynik_mnozenia2),
+        .dataa_0(a2),
+        .datab_0(b2),
+        .clock0(clk),
+        .aclr0(rst)
+    );
+
+    logic [50:0] a3;
+    logic [50:0] b3;
+    logic [101:0] wynik_mnozenia3;
+    mnozenie mno3(
+        .result(wynik_mnozenia3),
+        .dataa_0(a3),
+        .datab_0(b3),
+        .clock0(clk),
+        .aclr0(rst)
+    );
+
+    logic [50:0] a4;
+    logic [50:0] b4;
+    logic [101:0] wynik_mnozenia4;
+    mnozenie mno4(
+        .result(wynik_mnozenia4),
+        .dataa_0(a4),
+        .datab_0(b4),
+        .clock0(clk),
+        .aclr0(rst)
+    );
+
+
+    logic multiply_delay_start = 1'b0;
+    logic multiply_delay_finished = 1'b0;
+    logic [3:0] multiply_delay = 4'b0;
+    logic multiply_in_progress;
+
     always_ff @(posedge clk or posedge rst)
     begin
-        if (rst == 1'b1) begin 
-            multiply_delay_start = 1'b0;
-            multiply_delay_finished = 1'b0;
-            multiply_delay = 4'b0;
+        if (rst) begin
+            multiply_in_progress <= 1'b0;
+            multiply_delay <= 4'd0;
+            multiply_delay_finished <= 1'b0;
         end else begin
-            if (multiply_delay_start == 1'b1) begin
-                multiply_delay <= multiply_delay + 1;
-            end
-            if (multiply_delay == 10) begin
-                multiply_delay <= 4'b0;
-                multiply_delay_start <= 1'b0;
-                multiply_delay_finished <= 1'b1;
+            if (multiply_delay_start && !multiply_in_progress) begin
+                multiply_in_progress <= 1'b1;
+                multiply_delay <= 4'd1;  
+                multiply_delay_finished <= 1'b0;
+            end else if (multiply_in_progress) begin
+                if (multiply_delay == 11) begin
+                    multiply_in_progress <= 1'b0;
+                    multiply_delay_finished <= 1'b1;
+                    multiply_delay <= 4'd0;
+                end else begin
+                    multiply_delay <= multiply_delay + 1;
+                end
+            end else begin
+                multiply_delay_finished <= 1'b0;
             end
         end
     end
@@ -106,7 +166,7 @@ module BCH_decoder (
         if (rst == 1'b1) 
         begin
             //to see decoded syndrome comment the lines below
-            lower_correcting_capability2 = 1'b0;
+            //lower_correcting_capability2 = 1'b0;
             // for (logic [3:0] i = 0; i < 4 ;i++ ) begin
             //     error_correction2[i] <= 105'b0;
             // end
@@ -179,31 +239,39 @@ module BCH_decoder (
         begin
             if (lowered_correcting_capability == 1'b1 && blocker == 1'b0)begin
                 blocker <= 1'b1;
-                matrix_finished = 1'b0;
+                matrix_finished <= 1'b0;
             end
 
             if (counter == 6'b0)begin
                 decoded_syndrome4 <= decoded_syndrome2;
-                second_matrix_sum3[0] = 51'b0;
-                second_matrix_sum3[1] = 51'b0;
-                second_matrix_sum3[2] = 51'b0;
-                second_matrix_sum3[3] = 51'b0;
+                second_matrix_sum3[0] <= 51'b0;
+                second_matrix_sum3[1] <= 51'b0;
+                second_matrix_sum3[2] <= 51'b0;
+                second_matrix_sum3[3] <= 51'b0;
+                error_correction2[0] <= 16'b0;
+                error_correction2[1] <= 16'b0;
+                error_correction2[2] <= 16'b0;
+                error_correction2[3] <= 16'b0;
                 counter <= counter + 1;
             end
 
-            //create matrix
-            if (counter == 2 || counter == 3 || counter == 1)begin
+            if (counter == 1)begin
                 for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
                     for (logic [4:0] j = 0; j < 4 ; j++ ) begin //changed size to 4
-                    first_matrix3[i][j] = decoded_syndrome4[j+i]; 
+                        first_matrix3[i][j] <= decoded_syndrome4[j+i]; 
                     end
-                    second_matrix[i] = decoded_syndrome4[size+i];
+                    second_matrix[i] <= decoded_syndrome4[size+i];
                 end
+                counter <= counter + 2;
+            end
+
+            //create matrix
+            if (counter == 3)begin
                 det_first_matrix <= first_matrix3;
                 start_determinant <= 1'b1;
                 //first_matrix_determinant(first_matrix3,size,first_matrix_sum3); // determinant calculation. Jeżeli jest mniej niż założona liczba błędów to wyjdzie 0, i powinniśmy spróbować innego rozmiaru
                 if (finished_determinant == 1'b1) begin
-                    first_matrix_sum3 = det_first_matrix_sum; 
+                    first_matrix_sum3 <= det_first_matrix_sum; 
                     start_determinant <= 1'b0;
                     counter <= counter + 1;
                     start_determinant <= 1'b0;
@@ -211,7 +279,8 @@ module BCH_decoder (
             end
             
             if (counter == 4)begin
-                syndromes(first_matrix_sum3,first_matrix_sum3); // syndrome from determinant
+                syndromes(first_matrix_sum3,first_matrix_sum3_for_syndrome); // syndrome from determinant
+                first_matrix_sum3 <= first_matrix_sum3_for_syndrome;
                 counter <= counter + 1;
             end
 
@@ -220,12 +289,7 @@ module BCH_decoder (
                 start_minor <= 1'b1;
                 min_first_matrix <= first_matrix3;
                 if (finished_minor == 1'b1) begin
-                    first_matrix3 = min_first_matrix_out;
-                    for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
-                        for (logic [4:0] j = 0; j < 4 ; j++ ) begin// changed size to 4
-                            syndromes(first_matrix3[i][j],first_matrix3[i][j]);
-                        end
-                    end
+                    first_matrix3 <= min_first_matrix_out;
                     start_minor <= 1'b0;
                     counter <= counter + 1;
                 end
@@ -233,21 +297,113 @@ module BCH_decoder (
 
             if (counter == 6)begin
                 for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
-                    for (logic [4:0] j = 0; j < 4 ; j++ ) begin //changed size to 4
-                        first_matrix3[i][j] = first_matrix3[i][j] * (16'b1000000000000000/first_matrix_sum3); // wymnożenie przez determinante
-                        second_matrix_sum3[i] = second_matrix_sum3[i] ^ second_matrix[j] * first_matrix3[i][j]; // wymnożenie przez 2 macierz
+                    for (logic [4:0] j = 0; j < 4 ; j++ ) begin// changed size to 4
+                        syndromes(first_matrix3[i][j],first_matrix3_for_syndrome[i][j]);
                     end
-                    error_correction2[i] = 16'b0;
-                    syndromes(second_matrix_sum3[i],second_matrix_sum3[i]);
                 end
+                first_matrix3 <= first_matrix3_for_syndrome;
                 counter <= counter + 1;
             end
-            if (counter == 7)begin
+
+            if (counter == 7) begin
+                //divided_signal <= 16'b1000000000000000/first_matrix_sum3[15:0];
+            case (first_matrix_sum3[15:0])
+                16'b1:                divided_signal <= 16'b1000000000000000;
+                16'b10:               divided_signal <= 16'b100000000000000;
+                16'b100:              divided_signal <= 16'b10000000000000;
+                16'b1000:             divided_signal <= 16'b1000000000000;
+                16'b10000:            divided_signal <= 16'b100000000000;
+                16'b100000:           divided_signal <= 16'b10000000000;
+                16'b1000000:          divided_signal <= 16'b1000000000;
+                16'b10000000:         divided_signal <= 16'b100000000;
+                16'b100000000:        divided_signal <= 16'b10000000;
+                16'b1000000000:       divided_signal <= 16'b1000000;
+                16'b10000000000:      divided_signal <= 16'b100000;
+                16'b100000000000:     divided_signal <= 16'b10000;
+                16'b1000000000000:    divided_signal <= 16'b1000;
+                16'b10000000000000:   divided_signal <= 16'b100;
+                16'b100000000000000:  divided_signal <= 16'b10;
+                16'b1000000000000000: divided_signal <= 16'b1;
+                default: divided_signal <= divided_signal;
+            endcase
+                counter <= counter + 1;
+            end
+
+            if (counter == 8)begin
+                if (multiply_delay_start == 1'b0 && multiply_delay_finished == 1'b0) begin
+                    a <= divided_signal;
+                    b <= first_matrix3[k][0];
+                    a2 <= divided_signal;
+                    b2 <= first_matrix3[k][1];
+                    a3 <= divided_signal;
+                    b3 <= first_matrix3[k][2];
+                    a4 <= divided_signal;
+                    b4 <= first_matrix3[k][3];
+                    multiply_delay_start <= 1'b1;
+                end else if (multiply_delay_finished == 1'b1) begin
+                    multiply_delay_start <= 1'b0;
+                    first_matrix3[k][0] <= wynik_mnozenia[50:0];
+                    first_matrix3[k][1] <= wynik_mnozenia2[50:0];
+                    first_matrix3[k][2] <= wynik_mnozenia3[50:0];
+                    first_matrix3[k][3] <= wynik_mnozenia4[50:0];
+                    k <= k+1;
+                    if (k == 3) begin
+                        k <= 3'b0;
+                        counter <= counter + 1;
+                    end 
+                end
+                // for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
+                //     for (logic [4:0] j = 0; j < 4 ; j++ ) begin //changed size to 4
+                //         first_matrix3[i][j] <= first_matrix3[i][j] * (16'b1000000000000000/first_matrix_sum3);
+                //     end
+                // end
+                // counter <= counter + 1;
+                
+            end
+
+            if (counter == 9)begin
+                if (multiply_delay_start == 1'b0 && multiply_delay_finished == 1'b0) begin
+                    a <= second_matrix[0];
+                    b <= first_matrix3[k][0];
+                    a2 <= second_matrix[1];
+                    b2 <= first_matrix3[k][1];
+                    a3 <= second_matrix[2];
+                    b3 <= first_matrix3[k][2];
+                    a4 <= second_matrix[3];
+                    b4 <= first_matrix3[k][3];
+                    multiply_delay_start <= 1'b1;
+                end else if (multiply_delay_finished == 1'b1) begin
+                    multiply_delay_start <= 1'b0;
+                    second_matrix_sum3[k] <= wynik_mnozenia[50:0] ^ wynik_mnozenia2[50:0] ^ wynik_mnozenia3[50:0] ^ wynik_mnozenia4[50:0];
+                    k <= k+1;
+                    if (k == 3) begin
+                        k <= 3'b0;
+                        counter <= counter + 1;
+                    end 
+                end
+                // for (logic [4:0] i = 0; i < 4 ; i++ ) begin //changed size to 4
+                //     for (logic [4:0] j = 0; j < 4 ; j++ ) begin //changed size to 4
+                //     /////////////////////////////////////////////////////////////////////////////////////////////////
+                //         second_matrix_sum3[i] = second_matrix_sum3[i] ^ second_matrix[j] * first_matrix3[i][j]; // wymnożenie przez 2 macierz DO NAPRAWY PRZEZ TO NIE DZIALA !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                //     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //     end
+                // end
+                // counter <= counter + 1;
+            end
+
+            if (counter == 10)begin
+                for (logic [4:0] i = 0; i < 4 ; i++ )
+                syndromes(second_matrix_sum3[i],second_matrix_sum3_for_syndrome[i]);
+                second_matrix_sum3 <= second_matrix_sum3_for_syndrome;
+                counter <= counter + 1;
+            end
+
+            if (counter == 11)begin
                 if(size == 2 && first_matrix3[0][0] === 51'bx)begin
-                    where_errors2[0] = decoded_syndrome4[0]; // tylko dla 1 błędu
+                    where_errors2[0] <= decoded_syndrome4[0]; // tylko dla 1 błędu
                     counter <= counter + 1;
                 end else if (size == 3 && first_matrix3[0][0] === 51'bx) begin
-                    lower_correcting_capability2 = 1'b1;
+                    lower_correcting_capability2 <= 1'b1;
                     counter <= counter + 1;
                 end else begin 
                 //error_place(second_matrix_sum3,size,where_errors2); // znalezienie na których miejscach są błędy
@@ -260,19 +416,19 @@ module BCH_decoder (
                     end
                 end
             end
-            if (counter == 8)begin
-                error_correction2 = where_errors2;
+            if (counter == 12)begin
+                error_correction2 <= where_errors2;
                 test1 <= first_matrix3;
-                test2 <= error_correction2;
+                test2 <= where_errors2;
                 test3 <= first_matrix_sum3;
-                matrix_finished = 1'b1;
+                matrix_finished <= 1'b1;
                 counter <= 0;
             end
-                // test1 <= first_matrix3;
-                // test2 <= err_where_errors;
-                // test3 <= first_matrix_sum3;
+                test1 <= first_matrix3;
+                test2 <= where_errors2;
+                test3 <= first_matrix_sum3;
         end else begin
-            matrix_finished = 1'b0;
+            matrix_finished <= 1'b0;
             blocker <= 1'b0;
         end
     end
