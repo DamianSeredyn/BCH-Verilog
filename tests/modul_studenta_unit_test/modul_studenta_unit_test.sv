@@ -327,7 +327,7 @@ endfunction
     DataIN = 8'b01010101;
     BCH = 1'b0;
     Gauss = 1'b0;
-    BER = 1'b0;
+    BER = 1'b1;
     BERGen = 2;
     DataSignalReady = 1'b0;
 

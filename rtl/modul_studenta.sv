@@ -211,23 +211,29 @@ begin
             signal_input2 <= 5'b0;
             signal_input_comboined <= 8'b0;
 	    end 
-        else if(DataOutputReady == 1'b1) begin
-            transmition_Finished <= 1'b0;
-        end
         else 
         begin
+            if(DataOutputReady == 1'b1) begin
+                transmition_Finished <= 1'b0;
+            end
             if(DataReady == 1'b1 &&  prevDataReady == 1'b0) begin
                 BCH_coding <= hwif_out.INPUT_DATA.BCH.value;
                 generateNoise <= hwif_out.INPUT_DATA.Gauss.value;
                 randomGenerateErrors <= hwif_out.INPUT_DATA.BER.value;
-                numberOfGenerateErrors <= hwif_out.INPUT_DATA.BERGen.value;  
+
+                if(hwif_out.INPUT_DATA.BERGen.value > 8) begin
+                    numberOfGenerateErrors <= 7;
+                end 
+                else begin
+                    numberOfGenerateErrors <= hwif_out.INPUT_DATA.BERGen.value;      
+                end
                 densityPar <= hwif_out.INPUT_DATA.density.value;
                 transmition_Finished <= 1'b1;
                 signal_input1 <= hwif_out.INPUT_DATA.DataIN.value[7:4];
                 signal_input2 <= hwif_out.INPUT_DATA.DataIN.value[3:0];
                 signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;
 
-                if(hwif_out.INPUT_DATA.Gauss.value == 1'b1 ||hwif_out.INPUT_DATA.BCH.value == 1'b1 )
+                if(hwif_out.INPUT_DATA.Gauss.value == 1'b1 || hwif_out.INPUT_DATA.BER.value == 1'b1 )
                     begin
                         ena <= 1'b1;    
                     end
@@ -239,9 +245,10 @@ begin
             prevDataReady <= DataReady;
         end
 end 
-        
+/*      
 //TESTING PROCESS!
-/*
+
+
 always_ff @(posedge clk or posedge rst)
 begin
 	if (rst == 1'b1) 
@@ -257,11 +264,11 @@ begin
             signal_input2 <= 5'b0;
             signal_input_comboined <= 8'b0;
 	    end 
-        else if(DataOutputReady == 1'b1) begin
-            transmition_Finished <= 1'b0;
-        end
         else 
         begin
+            if(DataOutputReady == 1'b1) begin
+                transmition_Finished <= 1'b0;
+            end
             if(DataSignalReady == 1'b1 &&  prevDataReady == 1'b0) begin
                 BCH_coding <= BCH;
                 generateNoise <= Gauss;
@@ -273,7 +280,7 @@ begin
                 signal_input2 <= DataIN[3:0];
                 signal_input_comboined <= DataIN;
 
-                if(Gauss == 1'b1 ||BCH == 1'b1 )
+                if(Gauss == 1'b1 ||BCH == 1'b1 || BER == 1'b1)
                     begin
                         ena <= 1'b1;    
                     end
@@ -284,8 +291,8 @@ begin
             end
             prevDataReady <= DataSignalReady;
         end
-
 end
+
 */
 always_ff @(posedge clk or posedge rst)
 begin
