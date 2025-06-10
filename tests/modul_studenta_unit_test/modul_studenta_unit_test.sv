@@ -73,6 +73,7 @@ module modul_studenta_unit_test;
       logic [7:0] density;
       logic [7:0] BERGen;
       logic DataOutputReady;
+      logic DataSignalReady;
 
     logic        s_axil_awready;
     logic        s_axil_awvalid;
@@ -157,6 +158,7 @@ module modul_studenta_unit_test;
         .density         ( density        ),
         .BERGen          ( BERGen         ),
         .Gauss           ( Gauss          ),
+        .DataSignalReady ( DataSignalReady),
         .DataOutputReady ( DataOutputReady)
 
         
@@ -314,19 +316,27 @@ endfunction
 
     appState prev_state;
     int transition_count = 0;
+    reset_n = ~ reset_n;
+    #5 reset_n = ~ reset_n;
 
 
     $display("==============================");
     $display("     INIT PROCESS TEST        ");
     $display("==============================");
-
-    dut.state = dut.IDLE;
+   dut.state = dut.IDLE;
     DataIN = 8'b01010101;
-    Gauss = 1'b0;
     BCH = 1'b0;
+    Gauss = 1'b0;
+    BER = 1'b0;
+    BERGen = 2;
+    DataSignalReady = 1'b0;
+
+
+    DataSignalReady = 1'b1;
     prev_state = dut.state;
+
     $display("Data input = 01010101");
-    for (int i = 0; i < 2000; i++) begin
+    for (int i = 0; i < 10000; i++) begin
         @(posedge clk_100mhz);
         if (dut.state !== prev_state) begin
             transition_count++;
@@ -340,12 +350,15 @@ endfunction
                 $display("Noise = %0b", dut.data_out);
             end
             else if(prev_state == dut.GENERATE_ERRORS) begin 
-                $display("Noised Signal = %0b", dut.encoded_signal1);
+                $display("Noised Signal = %0b", dut.REG_noisedSignalWithoutBCH);
                 $display("Number of Errors = %0d", dut.numberOfGenerateErrors);
             end
             prev_state = dut.state;
         end
     end
+    repeat (5) @(posedge clk_100mhz);
+    DataSignalReady = 1'b0;
+    repeat (5) @(posedge clk_100mhz);
 
     $display("Total number of state transitions: %0d", transition_count);
     $display("Data output: %0b, status of data: %0b", dut.DataOUT, dut.DataOutputReady);

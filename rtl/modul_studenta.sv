@@ -33,6 +33,7 @@ module modul_studenta (
     input  logic BER,
     input  logic [7:0] density,
     input  logic [7:0] BERGen,
+    input  logic DataSignalReady,
 
     output logic DataOutputReady
 );
@@ -112,7 +113,7 @@ logic BCH_decoded_finished = 1'b0;
 
   // Handle data
   logic prevDataReady;
-  logic DataReady;
+  wire DataReady;
 
   assign DataReady = hwif_out.INPUT_DATA.DataINReady.value;
 
@@ -194,6 +195,7 @@ typedef enum logic[2:0]{
 } appState;
 appState state;
 
+
 always_ff @(posedge clk or posedge rst)
 begin
     	if (rst == 1'b1) 
@@ -238,47 +240,49 @@ begin
         end
 end 
         
-
+//TESTING PROCESS!
 /*
-TESTING PROCESS!
 always_ff @(posedge clk or posedge rst)
 begin
-    	if (rst == 1'b1) 
+	if (rst == 1'b1) 
         begin
-                BCH_coding <= 1'b0;
-                generateNoise <= 1'b0;
-                transmition_Finished <= 1'b0;
-                BCH_startErrorGen_finished <= 1'b0;
-                BCH_decoded_finished <= 1'b0;
+            prevDataReady <= 1'b0;
+            BCH_coding <= 1'b0;
+            generateNoise <= 1'b0;
+            randomGenerateErrors <= 1'b0;
+            numberOfGenerateErrors <= 8'b0;  
+            densityPar <= 8'b0;
+            transmition_Finished <= 1'b0;
+            signal_input1 <= 5'b0;
+            signal_input2 <= 5'b0;
+            signal_input_comboined <= 8'b0;
 	    end 
-        else
+        else if(DataOutputReady == 1'b1) begin
+            transmition_Finished <= 1'b0;
+        end
+        else 
         begin
-            if (DebugTestSystem == 1'b1)
-            begin
-                BCH_coding <= 1'b1;
-                
-                generateNoise <= 1'b0;
-                randomGenerateErrors <= 1'b1;
-
+            if(DataSignalReady == 1'b1 &&  prevDataReady == 1'b0) begin
+                BCH_coding <= BCH;
+                generateNoise <= Gauss;
+                randomGenerateErrors <= BER;
+                numberOfGenerateErrors <= BERGen;  
+                densityPar <= density;
                 transmition_Finished <= 1'b1;
+                signal_input1 <= DataIN[7:4];
+                signal_input2 <= DataIN[3:0];
+                signal_input_comboined <= DataIN;
 
-                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
+                if(Gauss == 1'b1 ||BCH == 1'b1 )
                     begin
                         ena <= 1'b1;    
                     end
                 else
                     begin
                         ena <= 1'b0;    
-                    end
-                if(randomGenerateErrors == 1'b1)
-                    begin
-                        numberOfGenerateErrors <= 3;    
-                    end
-                else
-                    begin
-                        numberOfGenerateErrors <= 0;    
-                    end
-            end 
+                    end         
+            end
+            prevDataReady <= DataSignalReady;
         end
 
 end
@@ -288,10 +292,7 @@ begin
 	if (rst == 1'b1) 
     begin
         state <= IDLE;
-	end
-     else if(DataOutputReady == 1'b1) begin
-             state <= IDLE;
-    end   
+	end  
     else begin
 		if (transmition_Finished == 1'b1) 
         begin
@@ -312,7 +313,7 @@ begin
             begin
                 state <= DECODING_BCH;
             end
-            else if(test == 1'b1)
+            else // if(test == 1'b1  )
             begin
                 state <= FINISHED;
             end                
@@ -452,7 +453,7 @@ task automatic generate_error (
             updated_mask[rand_idx] = 1;
             current_iter_out = current_iter_in + 1;
 
-            if (current_iter_out == numberOfGenerateErrors - 1)
+            if (current_iter_out == numberOfGenerateErrors - 1 || numberOfGenerateErrors == 0)
                 done_flag = 1;
         end
     end
@@ -479,7 +480,7 @@ begin
                 decoded_signal <= decoded_signal3;
                 BCH_decoded_finished <= 1'b1;
                 start_decoding <= 1'b0;
-                test = 1'b1;
+              //  test = 1'b1;
                 end
             end
         end
