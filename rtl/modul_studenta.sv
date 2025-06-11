@@ -410,8 +410,8 @@ always_ff @(posedge clk or posedge rst) begin
     end 
     else begin
         if (state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0) begin
-            logic [31:0] temp_iter <= 0;
-            logic done  <= 0;
+            logic [31:0] temp_iter;
+            logic done;
 
             if (BCH_coding == 1'b1) begin
                 logic [16-1:0] temp_signal;
@@ -429,8 +429,8 @@ always_ff @(posedge clk or posedge rst) begin
                 encoded_signal_mask <= temp_mask;
             end 
             else begin
-                logic [8-1:0] temp_signal <= 0;
-                logic [8-1:0] temp_mask <= 0;
+                logic [8-1:0] temp_signal;
+                logic [8-1:0] temp_mask;
                 generate_error(8, rand_idx[2:0], signal_input_comboined, signal_input_mask, current_iteration, numberOfGenerateErrors,
                 temp_signal, temp_mask, temp_iter, done);
 
