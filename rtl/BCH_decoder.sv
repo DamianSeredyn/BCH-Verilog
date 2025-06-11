@@ -30,7 +30,6 @@ module BCH_decoder (
     logic [50:0] divided_signal;
     logic [15:0] where_errors2 [3:0];// pokazuje na których miejscach są błędy
     logic [4:0] size = 3; // changed to const because of errors
-    logic [15:0] recilocal;
     logic matrix_finished = 1'b0;
     logic start_matrix = 1'b0;
     logic start_error_correction = 1'b0;
@@ -179,13 +178,13 @@ module BCH_decoder (
             begin
                 decode_syndromes(8,syndrome_coding2,decoded_syndrome2);
 
-                if (decoded_syndrome2[0] != 0)begin
-                start_matrix = 1'b1;
+                if (decoded_syndrome2[0] != 0 && finished_decoding2 == 1'b0)begin
+                start_matrix <= 1'b1;
                 end 
 
                 if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b1 && matrix_finished == 1'b1 && lowered_correcting_capability == 1'b0)begin
-                    size = 2;
-                    start_matrix = 1'b0;
+                    size <= 2;
+                    start_matrix <= 1'b0;
                     //matrix_finished = 1'b0;
                     lowered_correcting_capability <= 1'b1;
                 end else if (decoded_syndrome2[0] != 0 && lower_correcting_capability2 == 1'b0 && matrix_finished == 1'b1) begin
@@ -207,9 +206,10 @@ module BCH_decoder (
                     // dodać jakąś flagę, że mamy więcej błędów niż kodowanie przewiduje 
                     end
                     lowered_correcting_capability <= 1'b0;
-                    finished_decoding2 = 1'b1;
+                    finished_decoding2 <= 1'b1;
                     start_error_correction = 1'b0;
-                    start_matrix = 1'b0;
+                    start_matrix <= 1'b0;
+                    size <= 3;
                 end
 
                 //to see decoded syndrome comment the lines below
@@ -422,17 +422,108 @@ module BCH_decoder (
                 test2 <= where_errors2;
                 test3 <= first_matrix_sum3;
                 matrix_finished <= 1'b1;
-                counter <= 0;
+                counter <= 6'b0;
             end
-                test1 <= first_matrix3;
-                test2 <= where_errors2;
-                test3 <= first_matrix_sum3;
+                // test1 <= first_matrix3;
+                // test2 <= where_errors2;
+                // test3 <= first_matrix_sum3;
         end else begin
             matrix_finished <= 1'b0;
             blocker <= 1'b0;
+            counter <= 6'b0;
         end
     end
 
+    task decode_syndromes;
+    input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
+    input [16:0] data;
+    output [15:0] out [8:0];
+    logic [3:0] loop;
+    logic [104:0] input_data;
+    logic [15:0] decoded_syndrome3 [8:0];
+    begin
+        input_data = 105'b0;
+        for ( loop = 1; loop <= 8; loop++) // changed size(syndrome_number) to 8
+        begin
+            for (integer i = 0; i < 16; i++) // TRZEBA TO NAPRAWIĆ, KOD Z INTEGEREM SIE NIE ZSYTENZUJE A BEZ NIEGO NIE DZIALA
+            begin
+              if (data[i] && i*loop < 105)
+                input_data[i*loop] = 1'b1;
+            end
+            if(loop < 10 && loop > 0)
+            syndromes(input_data, decoded_syndrome3[loop-1]);
+            input_data = 105'b0;
+        end
+        out = decoded_syndrome3;
+    end
+    endtask
+
+    task syndromes;
+        logic [104:0] data;
+        logic [15:0] data_2;
+        input [104:0] data_i;
+        output[15:0] data_oo;
+        begin
+            data = data_i;
+            data_2 = 105'b0;
+            for (logic [9:0] i = 16; i < 105; i++)
+            begin
+                if (data[i])
+                begin
+                    data[i] = 1'b0;
+                    data[i % 15] = 1'b1 ^ data[i % 15];
+                end
+            end
+            if (data[0])
+                data_2 = data_2 ^ 16'b01;
+            if (data[1])
+                data_2 = data_2 ^ 16'b10;
+            if (data[2])
+                data_2 = data_2 ^ 16'b100;
+            if (data[3])
+                data_2 = data_2 ^ 16'b1000;
+            if (data[4])
+                data_2 = data_2 ^ 16'b11;
+            if(data[5])
+                data_2 = data_2 ^ 16'b110;
+            if(data[6])
+                data_2 = data_2 ^ 16'b1100;
+            if(data[7])
+                data_2 = data_2 ^ 16'b1011; 
+            if(data[8])
+                data_2 = data_2 ^ 16'b101;
+            if(data[9])
+                data_2 = data_2 ^ 16'b1010;
+            if(data[10])
+                data_2 = data_2 ^ 16'b111;
+            if(data[11])
+                data_2 = data_2 ^ 16'b1110;
+            if(data[12])
+                data_2 = data_2 ^ 16'b1111;
+            if(data[13])
+                data_2 = data_2 ^ 16'b1101;
+            if(data[14])
+                data_2 = data_2 ^ 16'b1001;
+            if(data[15])
+                data_2 = data_2 ^ 16'b01;
+            case (data_2)
+                16'b0011:  data_2 = 16'b10000;
+                16'b0110:  data_2 = 16'b100000;
+                16'b1100:  data_2 = 16'b1000000;
+                16'b1011:  data_2 = 16'b10000000;
+                16'b0101:  data_2 = 16'b100000000;
+                16'b1010:  data_2 = 16'b1000000000;
+                16'b0111:  data_2 = 16'b10000000000;
+                16'b1110:  data_2 = 16'b100000000000;
+                16'b1111:  data_2 = 16'b1000000000000;
+                16'b1101:  data_2 = 16'b10000000000000;
+                16'b1001:  data_2 = 16'b100000000000000;
+                16'b0001:  data_2 = 16'b1000000000000000;
+                default: data_2 = data_2;
+            endcase
+            data_oo = data_2;
+        end
+    endtask
 
     // task error_place;// działa tylko dla macierzy 2x2 czyli do 2 błędów
     // input [50:0] second_matrix_sum [3:0];
@@ -606,96 +697,5 @@ module BCH_decoder (
     //     Sarrus = first_matrix_sum2;
     // end
     // endfunction
-
-    task decode_syndromes;
-    input [3:0] syndrome_number; // Input number of syndromes to do(2*max number of errors)
-    input [16:0] data;
-    output [15:0] out [8:0];
-    logic [3:0] loop;
-    logic [104:0] input_data;
-    logic [15:0] decoded_syndrome3 [8:0];
-    begin
-        input_data = 105'b0;
-        for ( loop = 1; loop <= 8; loop++) // changed size(syndrome_number) to 8
-        begin
-            for (integer i = 0; i < 16; i++) // TRZEBA TO NAPRAWIĆ, KOD Z INTEGEREM SIE NIE ZSYTENZUJE A BEZ NIEGO NIE DZIALA
-            begin
-              if (data[i] && i*loop < 105)
-                input_data[i*loop] = 1'b1;
-            end
-            if(loop < 10 && loop > 0)
-            syndromes(input_data, decoded_syndrome3[loop-1]);
-            input_data = 105'b0;
-        end
-        out = decoded_syndrome3;
-    end
-    endtask
-
-    task syndromes;
-        logic [104:0] data;
-        logic [15:0] data_2;
-        input [104:0] data_i;
-        output[15:0] data_oo;
-        begin
-            data = data_i;
-            data_2 = 105'b0;
-            for (logic [9:0] i = 16; i < 105; i++)
-            begin
-                if (data[i])
-                begin
-                    data[i] = 1'b0;
-                    data[i % 15] = 1'b1 ^ data[i % 15];
-                end
-            end
-            if (data[0])
-                data_2 = data_2 ^ 16'b01;
-            if (data[1])
-                data_2 = data_2 ^ 16'b10;
-            if (data[2])
-                data_2 = data_2 ^ 16'b100;
-            if (data[3])
-                data_2 = data_2 ^ 16'b1000;
-            if (data[4])
-                data_2 = data_2 ^ 16'b11;
-            if(data[5])
-                data_2 = data_2 ^ 16'b110;
-            if(data[6])
-                data_2 = data_2 ^ 16'b1100;
-            if(data[7])
-                data_2 = data_2 ^ 16'b1011; 
-            if(data[8])
-                data_2 = data_2 ^ 16'b101;
-            if(data[9])
-                data_2 = data_2 ^ 16'b1010;
-            if(data[10])
-                data_2 = data_2 ^ 16'b111;
-            if(data[11])
-                data_2 = data_2 ^ 16'b1110;
-            if(data[12])
-                data_2 = data_2 ^ 16'b1111;
-            if(data[13])
-                data_2 = data_2 ^ 16'b1101;
-            if(data[14])
-                data_2 = data_2 ^ 16'b1001;
-            if(data[15])
-                data_2 = data_2 ^ 16'b01;
-            case (data_2)
-                16'b0011:  data_2 = 16'b10000;
-                16'b0110:  data_2 = 16'b100000;
-                16'b1100:  data_2 = 16'b1000000;
-                16'b1011:  data_2 = 16'b10000000;
-                16'b0101:  data_2 = 16'b100000000;
-                16'b1010:  data_2 = 16'b1000000000;
-                16'b0111:  data_2 = 16'b10000000000;
-                16'b1110:  data_2 = 16'b100000000000;
-                16'b1111:  data_2 = 16'b1000000000000;
-                16'b1101:  data_2 = 16'b10000000000000;
-                16'b1001:  data_2 = 16'b100000000000000;
-                16'b0001:  data_2 = 16'b1000000000000000;
-                default: data_2 = data_2;
-            endcase
-            data_oo = data_2;
-        end
-    endtask
 
 endmodule

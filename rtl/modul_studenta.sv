@@ -72,10 +72,11 @@ logic EncoderReady1;
 logic EncoderReady2;
 
 // Decoding
-logic [15:0] syndrome_coding = 16'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [15:0] syndrome_coding; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
 logic [15:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
 logic [15:0] decoded_signal; // final decoded signal
+logic [15:0] decoded_signal2;
 logic [15:0] decoded_signal3; // final decoded signal
 logic start_decoding = 1'b0;
 logic finished_decoding;
@@ -83,6 +84,7 @@ logic [50:0] test_variable1 [3:0][3:0];
 logic [15:0] test_variable2 [3:0];
 logic [50:0] test_variable3;
 logic [50:0] counter = 51'b0; //DELETE THIS, ONLY FOR TESTING
+logic [5:0] decoding_counter = 2'b0;
 logic test = 1'b0;
 
 
@@ -321,7 +323,7 @@ begin
                 state <= DECODING_BCH;
                 LED <= 8'b0000_1111;
             end
-            else // if(test == 1'b1  )
+            else  //if(test == 1'b1  )
             begin
                 state <= FINISHED;
                 LED <= 8'b0001_1111;
@@ -490,14 +492,28 @@ begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
                 counter <= counter + 1;
-                start_decoding = 1'b1;
-            if (finished_decoding == 1'b1) begin
-                decoded_signal <= decoded_signal3;
-                BCH_decoded_finished <= 1'b1;
-                start_decoding <= 1'b0;
-              //  test = 1'b1;
+                if (decoding_counter == 0) begin
+                   start_decoding <= 1'b1;
+                   syndrome_coding <= 16'b101110000111111;
                 end
-            end
+
+                if (finished_decoding == 1'b1 && decoding_counter == 0) begin
+                    decoded_signal <= decoded_signal3;
+                    decoding_counter <= decoding_counter + 1;
+                    start_decoding <= 1'b0;
+                end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
+                    syndrome_coding <= 16'b100100011111110;
+                    start_decoding <= 1'b1;
+                    decoding_counter <= decoding_counter + 1;
+                end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
+                    decoded_signal2 <= decoded_signal3;
+                    //test <= 1'b1;
+                    BCH_decoded_finished <= 1'b1;
+                    start_decoding <= 1'b0;
+                    decoding_counter <= 6'b0;
+                end
+
+            end 
         end
 end
 
