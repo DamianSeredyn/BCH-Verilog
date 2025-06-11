@@ -265,7 +265,7 @@ module BCH_decoder (
                 counter <= counter + 2;
             end
 
-            //create matrix
+            //////////////////////create matrix
             if (counter == 3)begin
                 det_first_matrix <= first_matrix3;
                 start_determinant <= 1'b1;
@@ -324,7 +324,7 @@ module BCH_decoder (
                 16'b10000000000000:   divided_signal <= 16'b100;
                 16'b100000000000000:  divided_signal <= 16'b10;
                 16'b1000000000000000: divided_signal <= 16'b1;
-                default: divided_signal <= divided_signal;
+                default: divided_signal <= 16'b0;
             endcase
                 counter <= counter + 1;
             end
@@ -399,10 +399,13 @@ module BCH_decoder (
             end
 
             if (counter == 11)begin
-                if(size == 2 && first_matrix3[0][0] === 51'bx)begin
+                if(size == 2 && (first_matrix3[0][0] === 51'bx || first_matrix3[0][0] === 51'b0))begin
                     where_errors2[0] <= decoded_syndrome4[0]; // tylko dla 1 błędu
+                    where_errors2[1] <= 16'b0;
+                    where_errors2[2] <= 16'b0;
+                    where_errors2[3] <= 16'b0;
                     counter <= counter + 1;
-                end else if (size == 3 && first_matrix3[0][0] === 51'bx) begin
+                end else if (size == 3 && first_matrix3[0][0] === 51'bx || first_matrix3[0][0] === 51'b0) begin
                     lower_correcting_capability2 <= 1'b1;
                     counter <= counter + 1;
                 end else begin 
@@ -431,6 +434,7 @@ module BCH_decoder (
             matrix_finished <= 1'b0;
             blocker <= 1'b0;
             counter <= 6'b0;
+            lower_correcting_capability2 <= 1'b0;
         end
     end
 
