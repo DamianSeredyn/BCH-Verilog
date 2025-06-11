@@ -1,0 +1,10 @@
+	component mnozenie is
+		port (
+			result  : out std_logic_vector(101 downto 0);                    -- result
+			dataa_0 : in  std_logic_vector(50 downto 0)  := (others => 'X'); -- dataa_0
+			datab_0 : in  std_logic_vector(50 downto 0)  := (others => 'X'); -- datab_0
+			clock0  : in  std_logic                      := 'X';             -- clock0
+			aclr0   : in  std_logic                      := 'X'              -- aclr0
+		);
+	end component mnozenie;
+

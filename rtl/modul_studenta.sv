@@ -33,6 +33,7 @@ module modul_studenta (
     input  logic BER,
     input  logic [7:0] density,
     input  logic [7:0] BERGen,
+    input  logic DataSignalReady,
 
     output logic DataOutputReady
 );
@@ -53,6 +54,8 @@ logic [7:0] densityPar = 8'b0;
 logic transmition_Finished = 1'b0;
 logic [7:0] signal_input_comboined; 
 
+wire clk_state;
+
 // BCH THINNNNNNNNNNGSSSSSSSSSSSSSSSSSSSSSSS! Encoder!
 logic [4:0] signal_input1 = 5'b10011;
 logic [4:0] signal_input2 = 5'b10011; //temp value for testing max 7 bits
@@ -69,15 +72,20 @@ logic EncoderReady1;
 logic EncoderReady2;
 
 // Decoding
-logic [104:0] syndrome_coding = 104'b101110000111111; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
-logic [104:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
+logic [15:0] syndrome_coding; // test value but variable used to pass data. Keep the length!, If u want to test different value change in ...unit_test.sv
+logic [15:0] decoded_syndrome [8:0]; // decoded syndromes for further calculations
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
-logic [104:0] decoded_signal = 105'b0; // final decoded signal
-logic [104:0] decoded_signal3; // final decoded signal
-logic start_decoding = 1'b1;
-logic [104:0] test_variable1 [3:0][3:0];
-logic [104:0] test_variable2 [3:0];
-logic [104:0] test_variable3;
+logic [15:0] decoded_signal; // final decoded signal
+logic [15:0] decoded_signal2;
+logic [15:0] decoded_signal3; // final decoded signal
+logic start_decoding = 1'b0;
+logic finished_decoding;
+logic [50:0] test_variable1 [3:0][3:0];
+logic [15:0] test_variable2 [3:0];
+logic [50:0] test_variable3;
+logic [50:0] counter = 51'b0; //DELETE THIS, ONLY FOR TESTING
+logic [5:0] decoding_counter = 2'b0;
+logic test = 1'b0;
 
 
 // flags ending
@@ -96,6 +104,8 @@ logic BCH_decoded_finished = 1'b0;
   wire vld;
   wire valid_out;
   logic ena;
+wire [15:0] scaled_noise;
+assign scaled_noise = data_out & {densityPar, densityPar};
   
   // Random error generator
   localparam WIDTH = 13;
@@ -109,9 +119,11 @@ logic BCH_decoded_finished = 1'b0;
 
   // Handle data
   logic prevDataReady;
-  logic DataReady;
+  wire DataReady;
 
   assign DataReady = hwif_out.INPUT_DATA.DataINReady.value;
+
+  assign ena = 1'b1; 
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -139,11 +151,11 @@ gng_ctg #(
      // Clock divier - do Uarta
 
     clock_div #(
-    .N(1000)
+    .N(10)
     )cld_div (
         .clk_i(clk),
         .rst_i(rst),
-        .clk_o(clk_u)
+        .clk_o(clk_state)
     );
 
 
@@ -170,14 +182,15 @@ gng_ctg #(
         .clk(clk),
         .rst(rst),
         .syndrome_coding2(syndrome_coding),
-        //.decoded_syndrome2(decoded_syndrome),
+        .decoded_syndrome2(decoded_syndrome),
         .BCH_decoded_finished2(BCH_decoded_finished),
         .state2(start_decoding),
         .correcting_capability2(correcting_capability),
-        .decoded_signal2(decoded_signal3)//,
-        // .test1(test_variable1),
-        // .test2(test_variable2),
-        // .test3(test_variable3)
+        .decoded_signal2(decoded_signal3),
+        .test1(test_variable1),
+        .test2(test_variable2),
+        .test3(test_variable3),
+        .finished_decoding2(finished_decoding)
     );
 
 typedef enum logic[2:0]{
@@ -189,6 +202,7 @@ typedef enum logic[2:0]{
     FINISHED = 3'h5 
 } appState;
 appState state;
+
 
 always_ff @(posedge clk or posedge rst)
 begin
@@ -205,23 +219,67 @@ begin
             signal_input2 <= 5'b0;
             signal_input_comboined <= 8'b0;
 	    end 
-        else if(DataOutputReady == 1'b1) begin
-            transmition_Finished <= 1'b0;
-        end
         else 
         begin
+            if(DataOutputReady == 1'b1) begin
+                transmition_Finished <= 1'b0;
+            end
             if(DataReady == 1'b1 &&  prevDataReady == 1'b0) begin
                 BCH_coding <= hwif_out.INPUT_DATA.BCH.value;
                 generateNoise <= hwif_out.INPUT_DATA.Gauss.value;
                 randomGenerateErrors <= hwif_out.INPUT_DATA.BER.value;
-                numberOfGenerateErrors <= hwif_out.INPUT_DATA.BERGen.value;  
+
+                if(hwif_out.INPUT_DATA.BERGen.value > 8) begin
+                    numberOfGenerateErrors <= 7;
+                end 
+                else begin
+                    numberOfGenerateErrors <= hwif_out.INPUT_DATA.BERGen.value;      
+                end
                 densityPar <= hwif_out.INPUT_DATA.density.value;
                 transmition_Finished <= 1'b1;
                 signal_input1 <= hwif_out.INPUT_DATA.DataIN.value[7:4];
                 signal_input2 <= hwif_out.INPUT_DATA.DataIN.value[3:0];
-                signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;
+                signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;      
+            end
+            prevDataReady <= DataReady;
+        end
+end 
+/*      
+//TESTING PROCESS!
 
-                if(hwif_out.INPUT_DATA.Gauss.value == 1'b1 ||hwif_out.INPUT_DATA.BCH.value == 1'b1 )
+
+always_ff @(posedge clk or posedge rst)
+begin
+	if (rst == 1'b1) 
+        begin
+            prevDataReady <= 1'b0;
+            BCH_coding <= 1'b0;
+            generateNoise <= 1'b0;
+            randomGenerateErrors <= 1'b0;
+            numberOfGenerateErrors <= 8'b0;  
+            densityPar <= 8'b0;
+            transmition_Finished <= 1'b0;
+            signal_input1 <= 5'b0;
+            signal_input2 <= 5'b0;
+            signal_input_comboined <= 8'b0;
+	    end 
+        else 
+        begin
+            if(DataOutputReady == 1'b1) begin
+                transmition_Finished <= 1'b0;
+            end
+            if(DataSignalReady == 1'b1 &&  prevDataReady == 1'b0) begin
+                BCH_coding <= BCH;
+                generateNoise <= Gauss;
+                randomGenerateErrors <= BER;
+                numberOfGenerateErrors <= BERGen;  
+                densityPar <= density;
+                transmition_Finished <= 1'b1;
+                signal_input1 <= DataIN[7:4];
+                signal_input2 <= DataIN[3:0];
+                signal_input_comboined <= DataIN;
+
+                if(Gauss == 1'b1 ||BCH == 1'b1 || BER == 1'b1)
                     begin
                         ena <= 1'b1;    
                     end
@@ -230,92 +288,51 @@ begin
                         ena <= 1'b0;    
                     end         
             end
-            prevDataReady <= DataReady;
+            prevDataReady <= DataSignalReady;
         end
-end 
-        
-
-/*
-TESTING PROCESS!
-always_ff @(posedge clk or posedge rst)
-begin
-    	if (rst == 1'b1) 
-        begin
-                BCH_coding <= 1'b0;
-                generateNoise <= 1'b0;
-                transmition_Finished <= 1'b0;
-                BCH_startErrorGen_finished <= 1'b0;
-                BCH_decoded_finished <= 1'b0;
-	    end 
-        else
-        begin
-            if (DebugTestSystem == 1'b1)
-            begin
-                BCH_coding <= 1'b1;
-                
-                generateNoise <= 1'b0;
-                randomGenerateErrors <= 1'b1;
-
-                transmition_Finished <= 1'b1;
-
-                if(generateNoise == 1'b1 ||randomGenerateErrors == 1'b1 )
-                    begin
-                        ena <= 1'b1;    
-                    end
-                else
-                    begin
-                        ena <= 1'b0;    
-                    end
-                if(randomGenerateErrors == 1'b1)
-                    begin
-                        numberOfGenerateErrors <= 3;    
-                    end
-                else
-                    begin
-                        numberOfGenerateErrors <= 0;    
-                    end
-            end 
-        end
-
 end
+
 */
-always_ff @(posedge clk or posedge rst)
+always_ff @(posedge clk_state or posedge rst)
 begin
 	if (rst == 1'b1) 
     begin
         state <= IDLE;
-	end
-     else if(DataOutputReady == 1'b1) begin
-             state <= IDLE;
-    end   
+	end  
     else begin
 		if (transmition_Finished == 1'b1) 
         begin
             if(BCH_coding == 1'b1 && BCH_encoded_finished == 1'b0)
             begin
                 state <= ENCODING_BCH;
+                LED <= 8'b0000_0001;
             end
             else if(generateNoise == 1'b1 && BCH_startNoise_finished == 1'b0 && (BCH_encoded_finished == 1'b1 || BCH_coding == 1'b0) )
             begin
                 state <= GENERATE_NOISE;
+                LED <= 8'b0000_0011;
             end
             else if(randomGenerateErrors == 1'b1 && BCH_startErrorGen_finished == 1'b0 )
             begin
                 state <= GENERATE_ERRORS;
+                LED <= 8'b0000_0111;
             end
 
             else if(BCH_coding == 1'b1 && BCH_decoded_finished == 1'b0)
             begin
                 state <= DECODING_BCH;
+                LED <= 8'b0000_1111;
             end
-            else
+            else  //if(test == 1'b1  )
             begin
                 state <= FINISHED;
+                LED <= 8'b0001_1111;
             end                
 	    end
         else
         begin
             state <= IDLE;
+            LED <= 8'b1111_1111;
         end
 	end
 end
@@ -355,6 +372,9 @@ begin
         end
      else if(DataOutputReady == 1'b1) begin
             BCH_startNoise_finished <= 1'b0;
+            noisedSignalWithBCH1 <=0;
+            noisedSignalWithBCH2 <=0;
+            noisedSignalWithoutBCH <= 0;
     end   
     else
         begin
@@ -362,11 +382,11 @@ begin
             begin
                 if (valid_out) begin
                     if(BCH_coding == 1'b1) begin
-                        noisedSignalWithBCH1 <= encoded_signal1 ^ data_out; 
-                        noisedSignalWithBCH2 <= encoded_signal2 ^ data_out; 
+                        noisedSignalWithBCH1 <= encoded_signal1 ^ scaled_noise; 
+                        noisedSignalWithBCH2 <= encoded_signal2 ^ scaled_noise; 
                     end
                     else begin
-                        noisedSignalWithoutBCH <= signal_input_comboined + data_out; 
+                        noisedSignalWithoutBCH <= signal_input_comboined ^ scaled_noise; 
                     end
                     BCH_startNoise_finished <= 1'b1; 
                 end
@@ -387,6 +407,8 @@ always_ff @(posedge clk or posedge rst) begin
         BCH_startErrorGen_finished <= 1'b0;
         current_iteration <= 0;
         encoded_signal_mask <= 0;
+        REG_noisedSignalWithBCH <= 0;
+        signal_input_mask <= 0;
     end 
     else begin
         if (state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0) begin
@@ -448,7 +470,7 @@ task automatic generate_error (
             updated_mask[rand_idx] = 1;
             current_iter_out = current_iter_in + 1;
 
-            if (current_iter_out == numberOfGenerateErrors - 1)
+            if (current_iter_out == numberOfGenerateErrors || numberOfGenerateErrors == 0)
                 done_flag = 1;
         end
     end
@@ -458,9 +480,9 @@ always_ff @(posedge clk or posedge rst)
 begin
     if(rst == 1'b1)
         begin
-            BCH_decoded_finished <= 1'b0;
-            correcting_capability <= 3;
-            decoded_signal <= 105'b0;
+            // BCH_decoded_finished <= 1'b0;
+            // correcting_capability <= 3;
+            // decoded_signal <= 105'b0;
         end
     else if(DataOutputReady == 1'b1) begin
         BCH_decoded_finished <= 1'b0;
@@ -469,19 +491,31 @@ begin
         begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
-                start_decoding = 1'b1;
-                start_decoding = 1'b0;
-                decoded_signal = decoded_signal3;
-                BCH_decoded_finished = 1'b1;
-            end
+                counter <= counter + 1;
+                if (decoding_counter == 0) begin
+                   start_decoding <= 1'b1;
+                   syndrome_coding <= 16'b101110000111111;
+                end
+
+                if (finished_decoding == 1'b1 && decoding_counter == 0) begin
+                    decoded_signal <= decoded_signal3;
+                    decoding_counter <= decoding_counter + 1;
+                    start_decoding <= 1'b0;
+                end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
+                    syndrome_coding <= 16'b100100011111110;
+                    start_decoding <= 1'b1;
+                    decoding_counter <= decoding_counter + 1;
+                end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
+                    decoded_signal2 <= decoded_signal3;
+                    //test <= 1'b1;
+                    BCH_decoded_finished <= 1'b1;
+                    start_decoding <= 1'b0;
+                    decoding_counter <= 6'b0;
+                end
+
+            end 
         end
 end
-
-//zmienne do testów, później pewnie będzie można usunąć
-
-
-
-
 
 
 always_ff @(posedge clk or posedge rst)
