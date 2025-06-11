@@ -54,6 +54,8 @@ logic [7:0] densityPar = 8'b0;
 logic transmition_Finished = 1'b0;
 logic [7:0] signal_input_comboined; 
 
+wire clk_state;
+
 // BCH THINNNNNNNNNNGSSSSSSSSSSSSSSSSSSSSSSS! Encoder!
 logic [4:0] signal_input1 = 5'b10011;
 logic [4:0] signal_input2 = 5'b10011; //temp value for testing max 7 bits
@@ -100,6 +102,8 @@ logic BCH_decoded_finished = 1'b0;
   wire vld;
   wire valid_out;
   logic ena;
+wire [15:0] scaled_noise;
+assign scaled_noise = data_out & {densityPar, densityPar};
   
   // Random error generator
   localparam WIDTH = 13;
@@ -116,6 +120,8 @@ logic BCH_decoded_finished = 1'b0;
   wire DataReady;
 
   assign DataReady = hwif_out.INPUT_DATA.DataINReady.value;
+
+  assign ena = 1'b1; 
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -143,11 +149,11 @@ gng_ctg #(
      // Clock divier - do Uarta
 
     clock_div #(
-    .N(1000)
+    .N(10)
     )cld_div (
         .clk_i(clk),
         .rst_i(rst),
-        .clk_o(clk_u)
+        .clk_o(clk_state)
     );
 
 
@@ -231,16 +237,7 @@ begin
                 transmition_Finished <= 1'b1;
                 signal_input1 <= hwif_out.INPUT_DATA.DataIN.value[7:4];
                 signal_input2 <= hwif_out.INPUT_DATA.DataIN.value[3:0];
-                signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;
-
-                if(hwif_out.INPUT_DATA.Gauss.value == 1'b1 || hwif_out.INPUT_DATA.BER.value == 1'b1 )
-                    begin
-                        ena <= 1'b1;    
-                    end
-                else
-                    begin
-                        ena <= 1'b0;    
-                    end         
+                signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;      
             end
             prevDataReady <= DataReady;
         end
@@ -294,7 +291,7 @@ begin
 end
 
 */
-always_ff @(posedge clk or posedge rst)
+always_ff @(posedge clk_state or posedge rst)
 begin
 	if (rst == 1'b1) 
     begin
@@ -306,28 +303,34 @@ begin
             if(BCH_coding == 1'b1 && BCH_encoded_finished == 1'b0)
             begin
                 state <= ENCODING_BCH;
+                LED <= 8'b0000_0001;
             end
             else if(generateNoise == 1'b1 && BCH_startNoise_finished == 1'b0 && (BCH_encoded_finished == 1'b1 || BCH_coding == 1'b0) )
             begin
                 state <= GENERATE_NOISE;
+                LED <= 8'b0000_0011;
             end
             else if(randomGenerateErrors == 1'b1 && BCH_startErrorGen_finished == 1'b0 )
             begin
                 state <= GENERATE_ERRORS;
+                LED <= 8'b0000_0111;
             end
 
             else if(BCH_coding == 1'b1 && BCH_decoded_finished == 1'b0)
             begin
                 state <= DECODING_BCH;
+                LED <= 8'b0000_1111;
             end
             else // if(test == 1'b1  )
             begin
                 state <= FINISHED;
+                LED <= 8'b0001_1111;
             end                
 	    end
         else
         begin
             state <= IDLE;
+            LED <= 8'b1111_1111;
         end
 	end
 end
@@ -367,6 +370,9 @@ begin
         end
      else if(DataOutputReady == 1'b1) begin
             BCH_startNoise_finished <= 1'b0;
+            noisedSignalWithBCH1 <=0;
+            noisedSignalWithBCH2 <=0;
+            noisedSignalWithoutBCH <= 0;
     end   
     else
         begin
@@ -374,11 +380,11 @@ begin
             begin
                 if (valid_out) begin
                     if(BCH_coding == 1'b1) begin
-                        noisedSignalWithBCH1 <= encoded_signal1 ^ data_out; 
-                        noisedSignalWithBCH2 <= encoded_signal2 ^ data_out; 
+                        noisedSignalWithBCH1 <= encoded_signal1 ^ scaled_noise; 
+                        noisedSignalWithBCH2 <= encoded_signal2 ^ scaled_noise; 
                     end
                     else begin
-                        noisedSignalWithoutBCH <= signal_input_comboined + data_out; 
+                        noisedSignalWithoutBCH <= signal_input_comboined ^ scaled_noise; 
                     end
                     BCH_startNoise_finished <= 1'b1; 
                 end
@@ -399,11 +405,13 @@ always_ff @(posedge clk or posedge rst) begin
         BCH_startErrorGen_finished <= 1'b0;
         current_iteration <= 0;
         encoded_signal_mask <= 0;
+        REG_noisedSignalWithBCH <= 0;
+        signal_input_mask <= 0;
     end 
     else begin
         if (state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0) begin
-            logic [31:0] temp_iter;
-            logic done;
+            logic [31:0] temp_iter <= 0;
+            logic done  <= 0;
 
             if (BCH_coding == 1'b1) begin
                 logic [16-1:0] temp_signal;
@@ -421,8 +429,8 @@ always_ff @(posedge clk or posedge rst) begin
                 encoded_signal_mask <= temp_mask;
             end 
             else begin
-                logic [8-1:0] temp_signal;
-                logic [8-1:0] temp_mask;
+                logic [8-1:0] temp_signal <= 0;
+                logic [8-1:0] temp_mask <= 0;
                 generate_error(8, rand_idx[2:0], signal_input_comboined, signal_input_mask, current_iteration, numberOfGenerateErrors,
                 temp_signal, temp_mask, temp_iter, done);
 
@@ -460,7 +468,7 @@ task automatic generate_error (
             updated_mask[rand_idx] = 1;
             current_iter_out = current_iter_in + 1;
 
-            if (current_iter_out == numberOfGenerateErrors - 1 || numberOfGenerateErrors == 0)
+            if (current_iter_out == numberOfGenerateErrors || numberOfGenerateErrors == 0)
                 done_flag = 1;
         end
     end
