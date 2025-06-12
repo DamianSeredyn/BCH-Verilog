@@ -46,6 +46,7 @@ module error_place (
     logic multiply_delay_finished = 1'b0;
     logic [3:0] multiply_delay = 4'b0;
     logic multiply_in_progress;
+    logic [5:0] przesuniecie;
 
     always_ff @(posedge clk or posedge rst)
     begin
@@ -88,9 +89,9 @@ module error_place (
                 if (operation_counter == 6'b0) begin
                     for (logic [5:0] i = 6'b0; i < 16; i++)
                     begin
-                        if (i == 0) possible_values[i] = 16'b1;
-                        else if (i == 1) possible_values[i] = 16'b10;
-                        else possible_values[i] = 16'b10 << i-1;
+                        if (i == 0) possible_values[i] <= 16'b1;
+                        else if (i == 1) possible_values[i] <= 16'b10;
+                        else possible_values[i] <= 16'b10 << i-1;
                     end
                     operation_counter <= operation_counter + 1'b1;
                 end else if (operation_counter == 1 && size == 2) begin
@@ -100,7 +101,17 @@ module error_place (
                         multiply_delay_start <= 1'b1;
                     end else if (multiply_delay_finished == 1'b1) begin
                         multiply_delay_start <= 1'b0;
-                        if (wynik_mnozenia[50:0] == second_matrix_sum[0]) begin
+                        if (wynik_mnozenia[50:0] > 16'b1000_0000_0000_0000 && wynik_mnozenia[50:0] < 32'b1000_0000_0000_0000_0000_0000_0000_0000)begin
+                            przesuniecie <= 15;
+                        end else if (wynik_mnozenia[50:0] > 32'b1000_0000_0000_0000_0000_0000_0000_000)begin
+                            przesuniecie <= 30;
+                        end else begin
+                            przesuniecie <= 0;
+                        end
+                        operation_counter <= operation_counter + 1'b1;
+                    end
+                end else if (operation_counter == 2 && size == 2) begin
+                        if (wynik_mnozenia[50:0] >> przesuniecie == second_matrix_sum[0]) begin
                             syndromes((possible_values[k] ^ possible_values[m]),value_holder);
                             if (value_holder == second_matrix_sum[1]) begin
                                 where_errors[0] <= possible_values[k];
@@ -115,6 +126,7 @@ module error_place (
                                 end else begin
                                     m <= m + 1;
                                 end
+                                operation_counter <= 1;
                             end
                         end else begin
                             if (m == 15) begin
@@ -123,9 +135,9 @@ module error_place (
                             end else begin
                                 m <= m + 1;
                             end
+                            operation_counter <= 1;
                         end
-                    end
-                end else if (operation_counter == 2 && size == 2) begin
+                end else if (operation_counter == 3 && size == 2) begin
                     finished_error_place <= 1'b1;
                     k <= 6'b0;
                     m <= 6'b0;
@@ -148,43 +160,50 @@ module error_place (
                     end else if (multiply_delay_finished == 1'b1) begin
                         multiply_delay_start <= 1'b0;
                         operation_counter <= operation_counter + 1'b1;
+                        if (wynik_mnozenia[50:0] > 16'b1000_0000_0000_0000 && wynik_mnozenia[50:0] < 32'b1000_0000_0000_0000_0000_0000_0000_0000)begin
+                            przesuniecie <= 15;
+                        end else if (wynik_mnozenia[50:0] > 32'b1000_0000_0000_0000_0000_0000_0000_000)begin
+                            przesuniecie <= 30;
+                        end else begin
+                            przesuniecie <= 0;
+                        end
                     end
                 end else if (operation_counter == 3 && size == 3) begin
                     if (multiply_delay_start == 1'b0 && multiply_delay_finished == 1'b0) begin
-                        if (wynik_mnozenia[50:0] == second_matrix_sum[0]) begin
-                            syndromes((possible_values[k] ^ possible_values[m] ^ possible_values[n]),value_holder);
-                            if (value_holder == second_matrix_sum[2]) begin
-                                a <= possible_values[m];
-                                b <= possible_values[k];
-                                a2 <= possible_values[m];
-                                b2 <= possible_values[n];
-                                a3 <= possible_values[k];
-                                b3 <= possible_values[n];
-                                multiply_delay_start <= 1'b1;
+                            if (wynik_mnozenia[50:0] >> przesuniecie == second_matrix_sum[0]) begin
+                                syndromes((possible_values[k] ^ possible_values[m] ^ possible_values[n]),value_holder);
+                                if (value_holder == second_matrix_sum[2]) begin
+                                    a <= possible_values[m];
+                                    b <= possible_values[k];
+                                    a2 <= possible_values[m];
+                                    b2 <= possible_values[n];
+                                    a3 <= possible_values[k];
+                                    b3 <= possible_values[n];
+                                    multiply_delay_start <= 1'b1;
+                                end else begin
+                                if (n == 15) begin
+                                    m <= m + 1;
+                                    n <= 16'b0;
+                                end else if (m == 15) begin
+                                    k <= k + 1;
+                                    m <= 16'b0;
+                                end else begin
+                                    n <= n + 1;
+                                end
+                                operation_counter <= 6'b1;
+                                end
                             end else begin
-                               if (n == 15) begin
+                                if (n == 15) begin
                                 m <= m + 1;
                                 n <= 16'b0;
-                               end else if (m == 15) begin
+                                end else if (m == 15) begin
                                 k <= k + 1;
                                 m <= 16'b0;
-                               end else begin
+                                end else begin
                                 n <= n + 1;
-                               end
-                               operation_counter <= 6'b1;
+                                end
+                                operation_counter <= 6'b1;
                             end
-                        end else begin
-                            if (n == 15) begin
-                            m <= m + 1;
-                            n <= 16'b0;
-                            end else if (m == 15) begin
-                            k <= k + 1;
-                            m <= 16'b0;
-                            end else begin
-                            n <= n + 1;
-                            end
-                            operation_counter <= 6'b1;
-                        end
                     end else if (multiply_delay_finished == 1'b1) begin
                         multiply_delay_start <= 1'b0;
                         syndromes((wynik_mnozenia[50:0] ^ wynik_mnozenia2[50:0] ^ wynik_mnozenia3[50:0]),value_holder);
@@ -219,6 +238,7 @@ module error_place (
                 finished_error_place <= 1'b0;
                 operation_counter <= 6'b0;
                 value_holder <= 16'b0;
+                przesuniecie <= 0;
                 k <= 6'b0;
                 m <= 6'b0;
                 n <= 6'b0;

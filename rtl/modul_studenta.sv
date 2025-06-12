@@ -494,7 +494,7 @@ begin
                 counter <= counter + 1;
                 if (decoding_counter == 0) begin
                    start_decoding <= 1'b1;
-                   syndrome_coding <= 16'b101110000111111;
+                   syndrome_coding <= 16'b101110000111111; // tu podstawic wynik szumow
                 end
 
                 if (finished_decoding == 1'b1 && decoding_counter == 0) begin
@@ -502,7 +502,7 @@ begin
                     decoding_counter <= decoding_counter + 1;
                     start_decoding <= 1'b0;
                 end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
-                    syndrome_coding <= 16'b100100011111110;
+                    syndrome_coding <= 16'b100100011111110; // tu podstawic wynik szumow
                     start_decoding <= 1'b1;
                     decoding_counter <= decoding_counter + 1;
                 end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
