@@ -101,11 +101,10 @@ logic BCH_decoded_finished = 1'b0;
   wire [15:0] data_out;
   wire valid_ctg;
   wire [63:0]  rnd;
-  wire vld;
   wire valid_out;
-  logic ena;
-wire [15:0] scaled_noise;
-assign scaled_noise = data_out & {densityPar, densityPar};
+
+  logic GaussReset = 1'b1;
+  logic GaussInitSignal = 1'b0;
   
   // Random error generator
   localparam WIDTH = 13;
@@ -123,17 +122,15 @@ assign scaled_noise = data_out & {densityPar, densityPar};
 
   assign DataReady = hwif_out.INPUT_DATA.DataINReady.value;
 
-  assign ena = 1'b1; 
-
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
-    .INIT_Z1(64'hA1B2C3D4E5F60789),
-    .INIT_Z2(64'h1234DEADBEEF5678),
-    .INIT_Z3(64'h9ABCDEF012345678)
+    .INIT_Z1(64'd5030521883283424767),
+    .INIT_Z2(64'd18445829279364155008),
+    .INIT_Z3(64'd18436106298727503359)
 )prng (
         .clk(clk),
-        .rstn(~rst),
-        .ce(ena),
+        .rstn(GaussReset),
+        .ce(1'b1),
         .valid_out(valid_ctg),
         .data_out(rnd)
     );
@@ -141,7 +138,7 @@ gng_ctg #(
     // Interpolator – przekształca losowe bity w rozkład normalny
     gng_interp interp (
         .clk(clk),
-        .rstn(~rst),
+        .rstn(GaussReset),
         .valid_in(valid_ctg),
         .data_in(rnd),
         .valid_out(valid_out),
@@ -244,10 +241,11 @@ begin
             prevDataReady <= DataReady;
         end
 end 
-/*      
+
+     
 //TESTING PROCESS!
 
-
+/*
 always_ff @(posedge clk or posedge rst)
 begin
 	if (rst == 1'b1) 
@@ -279,20 +277,13 @@ begin
                 signal_input2 <= DataIN[3:0];
                 signal_input_comboined <= DataIN;
 
-                if(Gauss == 1'b1 ||BCH == 1'b1 || BER == 1'b1)
-                    begin
-                        ena <= 1'b1;    
-                    end
-                else
-                    begin
-                        ena <= 1'b0;    
-                    end         
-            end
             prevDataReady <= DataSignalReady;
         end
+    end
 end
-
 */
+
+
 always_ff @(posedge clk_state or posedge rst)
 begin
 	if (rst == 1'b1) 
@@ -307,7 +298,7 @@ begin
                 state <= ENCODING_BCH;
                 LED <= 8'b0000_0001;
             end
-            else if(generateNoise == 1'b1 && BCH_startNoise_finished == 1'b0 && (BCH_encoded_finished == 1'b1 || BCH_coding == 1'b0) )
+            else if(generateNoise == 1'b1 && BCH_startNoise_finished == 1'b0 )
             begin
                 state <= GENERATE_NOISE;
                 LED <= 8'b0000_0011;
@@ -364,6 +355,23 @@ begin
 
 end
 
+always_ff @(posedge clk_state or posedge rst)
+begin
+    if (rst) begin
+        GaussInitSignal <= 1'b0;
+    end
+    else begin
+        if (GaussInitSignal == 1'b0) begin
+            GaussReset <= 1'b0;               // aktywny reset (jeśli Reset aktywny w stanie niskim)
+            GaussInitSignal <= 1'b1;     // zapamiętaj, że już resetowano
+        end 
+        else begin
+            GaussReset <= 1'b1;               // już nie resetuj
+        end
+    end
+end
+
+
 always_ff @(posedge clk or posedge rst)
 begin
     if(rst == 1'b1)
@@ -372,9 +380,6 @@ begin
         end
      else if(DataOutputReady == 1'b1) begin
             BCH_startNoise_finished <= 1'b0;
-            noisedSignalWithBCH1 <=0;
-            noisedSignalWithBCH2 <=0;
-            noisedSignalWithoutBCH <= 0;
     end   
     else
         begin
@@ -382,11 +387,11 @@ begin
             begin
                 if (valid_out) begin
                     if(BCH_coding == 1'b1) begin
-                        noisedSignalWithBCH1 <= encoded_signal1 ^ scaled_noise; 
-                        noisedSignalWithBCH2 <= encoded_signal2 ^ scaled_noise; 
+                        noisedSignalWithBCH1 <= encoded_signal1 ^ (data_out & {densityPar, densityPar}); 
+                        noisedSignalWithBCH2 <= encoded_signal2 ^ (data_out & {densityPar, densityPar}); 
                     end
                     else begin
-                        noisedSignalWithoutBCH <= signal_input_comboined ^ scaled_noise; 
+                        noisedSignalWithoutBCH <= signal_input_comboined ^ (data_out & {densityPar, densityPar}); 
                     end
                     BCH_startNoise_finished <= 1'b1; 
                 end
