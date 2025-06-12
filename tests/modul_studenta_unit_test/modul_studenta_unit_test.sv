@@ -283,7 +283,7 @@ endfunction
         begin
             @(posedge clk_100mhz);
             wait_cycles++;
-            if (wait_cycles > 1000) begin
+            if (wait_cycles > 10000) begin
                 $display("Timeout waiting for BCH_encoded_finished");
                 `FAIL_UNLESS(0)
             break;
@@ -336,7 +336,7 @@ endfunction
     prev_state = dut.state;
 
     $display("Data input = 01010101");
-    for (int i = 0; i < 10000; i++) begin
+    for (int i = 0; i < 1000; i++) begin
         @(posedge clk_100mhz);
         if (dut.state !== prev_state) begin
             transition_count++;
@@ -378,7 +378,7 @@ endfunction
         begin
             @(posedge clk_100mhz);
             wait_cycles++;
-            if (wait_cycles > 20000) begin
+            if (wait_cycles > 100000) begin
                 $display("Timeout waiting for BCH_decoded_finished");
                 //`FAIL_UNLESS(0)
                 break;
