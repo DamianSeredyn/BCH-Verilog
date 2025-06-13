@@ -113,14 +113,13 @@ logic BCH_decoded_finished = 1'b0;
   logic [7:0] signal_input_mask =8'b0;
   logic [3:0] rand_idx;
     logic [7:0] REG_noisedSignalWithoutBCH;
-  logic [15:0] REG_noisedSignalWithBCH;
-  assign rand_idx = rnd[3:0];
+  logic [15:0] REG_noisedSignalWithBCH1;
+  logic [15:0] REG_noisedSignalWithBCH2;
+  assign rand_idx = rnd[3:0] ^ rnd[7:4];
+  logic AssignBERData = 1'b0;
 
   // Handle data
   logic prevDataReady;
-  wire DataReady;
-
-  assign DataReady = hwif_out.INPUT_DATA.DataINReady.value;
 
     // Generator liczb pseudolosowych (CTG)
 gng_ctg #(
@@ -221,7 +220,7 @@ begin
             if(DataOutputReady == 1'b1) begin
                 transmition_Finished <= 1'b0;
             end
-            if(DataReady == 1'b1 &&  prevDataReady == 1'b0) begin
+            if(hwif_out.INPUT_DATA.DataINReady.value == 1'b1 &&  prevDataReady == 1'b0) begin
                 BCH_coding <= hwif_out.INPUT_DATA.BCH.value;
                 generateNoise <= hwif_out.INPUT_DATA.Gauss.value;
                 randomGenerateErrors <= hwif_out.INPUT_DATA.BER.value;
@@ -238,7 +237,7 @@ begin
                 signal_input2 <= hwif_out.INPUT_DATA.DataIN.value[3:0];
                 signal_input_comboined <= hwif_out.INPUT_DATA.DataIN.value;      
             end
-            prevDataReady <= DataReady;
+            prevDataReady <= hwif_out.INPUT_DATA.DataINReady.value;
         end
 end 
 
@@ -404,43 +403,84 @@ end
 
 always_ff @(posedge clk or posedge rst) begin
     if (rst == 1'b1) begin
-        BCH_startErrorGen_finished <= 1'b0;
+        BCH_startErrorGen_finished <= 0;
         current_iteration <= 0;
         encoded_signal_mask <= 0;
+        signal_input_mask <= 0;
+        REG_noisedSignalWithBCH1 <= 0;
+        REG_noisedSignalWithBCH2 <= 0;
+        REG_noisedSignalWithoutBCH <= 0;
+        AssignBERData <= 0;
     end 
     else if (DataOutputReady == 1'b1) begin
-        BCH_startErrorGen_finished <= 1'b0;
+        BCH_startErrorGen_finished <= 0;
         current_iteration <= 0;
         encoded_signal_mask <= 0;
-        REG_noisedSignalWithBCH <= 0;
         signal_input_mask <= 0;
+        AssignBERData <= 1'b0;
     end 
     else begin
         if (state == GENERATE_ERRORS && BCH_startErrorGen_finished == 1'b0) begin
-            logic [31:0] temp_iter;
-            logic done;
+            logic [MAX_WIDTH-1:0] temp_signal;
+            logic [MAX_WIDTH-1:0] temp_mask;
+            logic [31:0]          temp_iter;
+            logic                 done;
 
-            if (BCH_coding == 1'b1) begin
-                logic [16-1:0] temp_signal;
-                logic [16-1:0] temp_mask;
-                if(rand_idx>3)  begin 
-                    generate_error(16, rand_idx[3:0], encoded_signal1, encoded_signal_mask, current_iteration, numberOfGenerateErrors,
-                    temp_signal, temp_mask, temp_iter, done);
-                end else
-                begin
-                    generate_error(16, rand_idx[3:0], encoded_signal2, encoded_signal_mask, current_iteration, numberOfGenerateErrors,
-                    temp_signal, temp_mask, temp_iter, done);                
+            if (!AssignBERData) begin
+                if (BCH_coding == 1'b1) begin
+                    REG_noisedSignalWithBCH1 <= encoded_signal1; 
+                    REG_noisedSignalWithBCH2 <= encoded_signal2;              
+                end else begin
+                    REG_noisedSignalWithoutBCH <= signal_input_comboined;
                 end
+                AssignBERData <= 1'b1;
+            end
 
-                REG_noisedSignalWithBCH <= temp_signal;
-                encoded_signal_mask <= temp_mask;
-            end 
-            else begin
-                logic [8-1:0] temp_signal;
-                logic [8-1:0] temp_mask;
-                generate_error(8, rand_idx[2:0], signal_input_comboined, signal_input_mask, current_iteration, numberOfGenerateErrors,
-                temp_signal, temp_mask, temp_iter, done);
-
+            if (BCH_coding) begin
+                if (rand_idx > 7) begin
+                    generate_error_inplace(
+                        16,
+                        rand_idx[3:0],
+                        REG_noisedSignalWithBCH1,
+                        encoded_signal_mask,
+                        current_iteration,
+                        numberOfGenerateErrors,
+                        temp_signal,
+                        temp_mask,
+                        temp_iter,
+                        done
+                    );
+                    REG_noisedSignalWithBCH1 <= temp_signal;
+                    encoded_signal_mask      <= temp_mask;
+                end else begin
+                    generate_error_inplace(
+                        16,
+                        rand_idx[3:0],
+                        REG_noisedSignalWithBCH2,
+                        encoded_signal_mask,
+                        current_iteration,
+                        numberOfGenerateErrors,
+                        temp_signal,
+                        temp_mask,
+                        temp_iter,
+                        done
+                    );
+                    REG_noisedSignalWithBCH2 <= temp_signal;
+                    encoded_signal_mask      <= temp_mask;
+                end
+            end else begin
+                generate_error_inplace(
+                    8,
+                    rand_idx[2:0],
+                    REG_noisedSignalWithoutBCH,
+                    signal_input_mask,
+                    current_iteration,
+                    numberOfGenerateErrors,
+                    temp_signal,
+                    temp_mask,
+                    temp_iter,
+                    done
+                );
                 REG_noisedSignalWithoutBCH <= temp_signal;
                 signal_input_mask <= temp_mask;
             end
@@ -450,37 +490,34 @@ always_ff @(posedge clk or posedge rst) begin
         end
     end
 end
-
-task automatic generate_error (
-    input  int unsigned width, 
+task automatic generate_error_inplace(
+    input  int unsigned width,
     input  int unsigned rand_idx,
-    input  logic [MAX_WIDTH-1:0] original_signal,
-    input  logic [MAX_WIDTH-1:0] original_mask,
+    input  logic [MAX_WIDTH-1:0] signal_with_noise_in,
+    input  logic [MAX_WIDTH-1:0] noise_mask_in,
     input  int unsigned current_iter_in,
     input  int unsigned numberOfGenerateErrors,
-
-    output logic [MAX_WIDTH-1:0] updated_signal,
-    output logic [MAX_WIDTH-1:0] updated_mask,
-    output int unsigned          current_iter_out,
-    output logic                 done_flag
+    output logic [MAX_WIDTH-1:0] signal_with_noise_out,
+    output logic [MAX_WIDTH-1:0] noise_mask_out,
+    output int unsigned current_iter_out,
+    output logic done_flag
 );
-    begin
-        updated_signal = original_signal;
-        updated_mask   = original_mask;
-        current_iter_out = current_iter_in;
-        done_flag = 0;
+begin
+    signal_with_noise_out = signal_with_noise_in;
+    noise_mask_out        = noise_mask_in;
+    current_iter_out      = current_iter_in;
+    done_flag             = 1'b0;
 
-        if (rand_idx < width && original_mask[rand_idx] == 0) begin
-            updated_signal[rand_idx] = ~original_signal[rand_idx];
-            updated_mask[rand_idx] = 1;
-            current_iter_out = current_iter_in + 1;
+    if (rand_idx < width && noise_mask_in[rand_idx] == 1'b0) begin
+        signal_with_noise_out[rand_idx] = ~signal_with_noise_in[rand_idx];
+        noise_mask_out[rand_idx]        = 1'b1;
+        current_iter_out                = current_iter_in + 1;
 
-            if (current_iter_out == numberOfGenerateErrors || numberOfGenerateErrors == 0)
-                done_flag = 1;
-        end
+        if (current_iter_out >= numberOfGenerateErrors || numberOfGenerateErrors == 0)
+            done_flag = 1'b1;
     end
+end
 endtask
-
 always_ff @(posedge clk or posedge rst)
 begin
     if(rst == 1'b1)
@@ -531,7 +568,7 @@ begin
         end
     else
         begin
-            if(transmition_Finished == 1'b1) begin
+            if(transmition_Finished) begin
                 DataOutputReady <= 1'b0;
             end
             if(state == FINISHED && DataOutputReady == 1'b0)
