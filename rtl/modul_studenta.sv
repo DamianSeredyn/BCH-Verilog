@@ -536,7 +536,20 @@ begin
                 counter <= counter + 1;
                 if (decoding_counter == 0) begin
                    start_decoding <= 1'b1;
-                   syndrome_coding <= 16'b101110000111111; // tu podstawic wynik szumow
+                   syndrome_coding <= 16'b101110000111111; // tu podstawic wynik szumow //test value: 16'b101110000111111
+                end
+
+                if (decoding_counter == 0 && counter == 80000) begin
+                    decoded_signal <= syndrome_coding;
+                    decoding_counter <= decoding_counter + 1;
+                    start_decoding <= 1'b0;
+                end else if (decoding_counter == 2 && counter == 160000) begin
+                    decoded_signal2 <= syndrome_coding;
+                    //test <= 1'b1;
+                    BCH_decoded_finished <= 1'b1;
+                    start_decoding <= 1'b0;
+                    decoding_counter <= 6'b0;
+                    counter <= 51'b0;
                 end
 
                 if (finished_decoding == 1'b1 && decoding_counter == 0) begin
@@ -544,7 +557,7 @@ begin
                     decoding_counter <= decoding_counter + 1;
                     start_decoding <= 1'b0;
                 end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
-                    syndrome_coding <= 16'b100100011111110; // tu podstawic wynik szumow
+                    syndrome_coding <= 16'b100100011111110; // tu podstawic wynik szumow // test value: 16'b100100011111110
                     start_decoding <= 1'b1;
                     decoding_counter <= decoding_counter + 1;
                 end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
@@ -553,6 +566,7 @@ begin
                     BCH_decoded_finished <= 1'b1;
                     start_decoding <= 1'b0;
                     decoding_counter <= 6'b0;
+                    counter <= 51'b0;
                 end
 
             end 

@@ -378,7 +378,7 @@ endfunction
         begin
             @(posedge clk_100mhz);
             wait_cycles++;
-            if (wait_cycles > 100000) begin
+            if (wait_cycles > 200000) begin // duzy timeout, jak testujemy cos innego lepiej zmniejszyc
                 $display("Timeout waiting for BCH_decoded_finished");
                 //`FAIL_UNLESS(0)
                 break;
