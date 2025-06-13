@@ -77,7 +77,8 @@ logic [15:0] decoded_syndrome [8:0]; // decoded syndromes for further calculatio
 logic [4:0] correcting_capability = 3;//Number of errors that decoding can correct. MAX = 4
 logic [15:0] decoded_signal; // final decoded signal
 logic [15:0] decoded_signal2;
-logic [15:0] decoded_signal3; // final decoded signal
+logic [15:0] decoded_signal3; 
+logic [15:0] decoded_signal4; 
 logic start_decoding = 1'b0;
 logic finished_decoding;
 logic [50:0] test_variable1 [3:0][3:0];
@@ -477,32 +478,34 @@ begin
                 counter <= counter + 1;
                 if (decoding_counter == 0) begin
                    start_decoding <= 1'b1;
-                   syndrome_coding <= 16'b101110000111111; // tu podstawic wynik szumow //test value: 16'b101110000111111
+                   syndrome_coding <= 16'b101110000111111; // tu podstawic wynik szumowy wynikający z 4 najmłodszych bitów zmiennej wejściowej //test value: 16'b101110000111111
                 end
 
                 if (decoding_counter == 0 && counter == 80000) begin
-                    decoded_signal <= syndrome_coding;
+                    decoded_signal4 <= 16'b1111;
                     decoding_counter <= decoding_counter + 1;
                     start_decoding <= 1'b0;
                 end else if (decoding_counter == 2 && counter == 160000) begin
-                    decoded_signal2 <= syndrome_coding;
+                    decoded_signal2 <= 16'b0;
                     //test <= 1'b1;
-                    BCH_decoded_finished <= 1'b1;
                     start_decoding <= 1'b0;
-                    decoding_counter <= 6'b0;
-                    counter <= 51'b0;
+                    decoding_counter <= 3;
                 end
 
                 if (finished_decoding == 1'b1 && decoding_counter == 0) begin
-                    decoded_signal <= decoded_signal3;
+                    decoded_signal4 <= final_signal(decoded_signal3);
                     decoding_counter <= decoding_counter + 1;
                     start_decoding <= 1'b0;
                 end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
-                    syndrome_coding <= 16'b100100011111110; // tu podstawic wynik szumow // test value: 16'b100100011111110
+                    syndrome_coding <= 16'b100100011111110; //tu podstawic wynik szumowy wynikający z 4 najstarszych bitów zmiennej wejściowej  // test value: 16'b100100011111110
                     start_decoding <= 1'b1;
                     decoding_counter <= decoding_counter + 1;
                 end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
-                    decoded_signal2 <= decoded_signal3;
+                    decoded_signal2 <= final_signal(decoded_signal3);
+                    start_decoding <= 1'b0;
+                    decoding_counter <= decoding_counter + 1;
+                end else if (decoding_counter == 3) begin
+                    decoded_signal <= decoded_signal4 ^ (decoded_signal2 << 4);
                     //test <= 1'b1;
                     BCH_decoded_finished <= 1'b1;
                     start_decoding <= 1'b0;
@@ -514,6 +517,46 @@ begin
         end
 end
 
+
+function [4:0] final_signal;
+input [15:0] for_decoding;
+begin
+    case (for_decoding)
+        16'b10100110111: final_signal = 5'b1;
+        16'b101001101110: final_signal = 5'b10;
+        16'b111101011001: final_signal = 5'b11;
+        16'b1010011011100: final_signal = 5'b100;
+        16'b1000111101011: final_signal = 5'b101;
+        16'b1111010110010: final_signal = 5'b110;
+        16'b1101110000101: final_signal = 5'b111;
+        16'b10100110111000: final_signal = 5'b1000;
+        16'b10110010001111: final_signal = 5'b1001;
+        16'b10001111010110: final_signal = 5'b1010;
+        16'b10011011100001: final_signal = 5'b1011;
+        16'b11110101100100: final_signal = 5'b1100;
+        16'b11100001010011: final_signal = 5'b1101;
+        16'b11011100001010: final_signal = 5'b1110;
+        16'b11001000111101: final_signal = 5'b1111;
+        16'b101001101110000: final_signal = 5'b10000;
+        16'b101011001000111: final_signal = 5'b10001;
+        16'b101100100011110: final_signal = 5'b10010;
+        16'b101110000101001: final_signal = 5'b10011;
+        16'b100011110101100: final_signal = 5'b10100;
+        16'b100001010011011: final_signal = 5'b10101;
+        16'b100110111000010: final_signal = 5'b10110;
+        16'b100100011110101: final_signal = 5'b10111;
+        16'b111101011001000: final_signal = 5'b11000;
+        16'b111111111111111: final_signal = 5'b11001;
+        16'b111000010100110: final_signal = 5'b11010;
+        16'b111010110010001: final_signal = 5'b11011;
+        16'b110111000010100: final_signal = 5'b11100;
+        16'b110101100100011: final_signal = 5'b11101;
+        16'b110010001111010: final_signal = 5'b11110;
+        16'b110000101001101: final_signal = 5'b11111;
+        default: final_signal = 5'b0;
+    endcase
+end
+endfunction
 
 always_ff @(posedge clk or posedge rst)
 begin
@@ -555,7 +598,6 @@ begin
 end
 assign hwif_in.OUTPUT_DATA.DataOUT.next = DataOUT;
 assign hwif_in.OUTPUT_DATA.DataOutputReady.next = DataOutputReady;
-
 
 
 
