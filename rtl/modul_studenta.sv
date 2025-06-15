@@ -310,9 +310,8 @@ begin
                 state <= DECODING_BCH;
                 LED <= 8'b0000_1111;
             end
-            else  if(test == 1'b1  )
+            else  //if(test == 1'b1  )
             begin
-                test <= 1'b0;
                 state <= FINISHED;
                 LED <= 8'b0001_1111;
             end                
@@ -476,51 +475,52 @@ begin
         begin
             if(state == DECODING_BCH && BCH_decoded_finished == 1'b0)
             begin
-                counter <= counter + 1;
-                if (decoding_counter == 0) begin
-                    start_decoding <= 1'b1;
-                    if (BER == 1)begin
-                        syndrome_coding <= REG_noisedSignalWithBCH2; // tu podstawic wynik szumowy wynikający z 4 najmłodszych bitów zmiennej wejściowej //test value: 16'b101110000111111
-                    end else begin
-                        syndrome_coding <= noisedSignalWithBCH2;
-                    end
-                end
+                BCH_decoded_finished <= 1'b1;
+                // counter <= counter + 1;
+                // if (decoding_counter == 0) begin
+                //     start_decoding <= 1'b1;
+                //     if (BER == 1)begin
+                //         syndrome_coding <= REG_noisedSignalWithBCH2; // tu podstawic wynik szumowy wynikający z 4 najmłodszych bitów zmiennej wejściowej //test value: 16'b101110000111111
+                //     end else begin
+                //         syndrome_coding <= noisedSignalWithBCH2;
+                //     end
+                // end
 
-                if (decoding_counter == 0 && counter == 80000) begin
-                    decoded_signal4 <= 16'b1111;
-                    decoding_counter <= decoding_counter + 1;
-                    start_decoding <= 1'b0;
-                end else if (decoding_counter == 2 && counter == 160000) begin
-                    decoded_signal2 <= 16'b0;
-                    test <= 1'b1;
-                    start_decoding <= 1'b0;
-                    decoding_counter <= 3;
-                end
+                // if (decoding_counter == 0 && counter == 80000) begin
+                //     decoded_signal4 <= 16'b1111;
+                //     decoding_counter <= decoding_counter + 1;
+                //     start_decoding <= 1'b0;
+                // end else if (decoding_counter == 2 && counter == 160000) begin
+                //     decoded_signal2 <= 16'b0;
+                //     //test <= 1'b1;
+                //     start_decoding <= 1'b0;
+                //     decoding_counter <= 3;
+                // end
 
-                if (finished_decoding == 1'b1 && decoding_counter == 0) begin
-                    decoded_signal4 <= final_signal(decoded_signal3);
-                    decoding_counter <= decoding_counter + 1;
-                    start_decoding <= 1'b0;
-                end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
-                    if (BER == 1)begin
-                        syndrome_coding <= REG_noisedSignalWithBCH1; //tu podstawic wynik szumowy wynikający z 4 najstarszych bitów zmiennej wejściowej  // test value: 16'b100100011111110
-                    end else begin
-                        syndrome_coding <= noisedSignalWithBCH1;
-                    end
-                    start_decoding <= 1'b1;
-                    decoding_counter <= decoding_counter + 1;
-                end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
-                    decoded_signal2 <= final_signal(decoded_signal3);
-                    start_decoding <= 1'b0;
-                    decoding_counter <= decoding_counter + 1;
-                end else if (decoding_counter == 3) begin
-                    decoded_signal <= decoded_signal4 ^ (decoded_signal2 << 4);
-                    test <= 1'b1;
-                    BCH_decoded_finished <= 1'b1;
-                    start_decoding <= 1'b0;
-                    decoding_counter <= 6'b0;
-                    counter <= 51'b0;
-                end
+                // if (finished_decoding == 1'b1 && decoding_counter == 0) begin
+                //     decoded_signal4 <= final_signal(decoded_signal3);
+                //     decoding_counter <= decoding_counter + 1;
+                //     start_decoding <= 1'b0;
+                // end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
+                //     if (BER == 1)begin
+                //         syndrome_coding <= REG_noisedSignalWithBCH1; //tu podstawic wynik szumowy wynikający z 4 najstarszych bitów zmiennej wejściowej  // test value: 16'b100100011111110
+                //     end else begin
+                //         syndrome_coding <= noisedSignalWithBCH1;
+                //     end
+                //     start_decoding <= 1'b1;
+                //     decoding_counter <= decoding_counter + 1;
+                // end else if (finished_decoding == 1'b1 && decoding_counter == 2) begin
+                //     decoded_signal2 <= final_signal(decoded_signal3);
+                //     start_decoding <= 1'b0;
+                //     decoding_counter <= decoding_counter + 1;
+                // end else if (decoding_counter == 3) begin
+                //     decoded_signal <= decoded_signal4 ^ (decoded_signal2 << 4);
+                //     //test <= 1'b1;
+                //     BCH_decoded_finished <= 1'b1;
+                //     start_decoding <= 1'b0;
+                //     decoding_counter <= 6'b0;
+                //     counter <= 51'b0;
+                // end
 
             end 
         end
