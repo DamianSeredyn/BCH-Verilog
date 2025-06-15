@@ -310,8 +310,9 @@ begin
                 state <= DECODING_BCH;
                 LED <= 8'b0000_1111;
             end
-            else  //if(test == 1'b1  )
+            else  if(test == 1'b1  )
             begin
+                test <= 1'b0;
                 state <= FINISHED;
                 LED <= 8'b0001_1111;
             end                
@@ -491,7 +492,7 @@ begin
                     start_decoding <= 1'b0;
                 end else if (decoding_counter == 2 && counter == 160000) begin
                     decoded_signal2 <= 16'b0;
-                    //test <= 1'b1;
+                    test <= 1'b1;
                     start_decoding <= 1'b0;
                     decoding_counter <= 3;
                 end
@@ -514,7 +515,7 @@ begin
                     decoding_counter <= decoding_counter + 1;
                 end else if (decoding_counter == 3) begin
                     decoded_signal <= decoded_signal4 ^ (decoded_signal2 << 4);
-                    //test <= 1'b1;
+                    test <= 1'b1;
                     BCH_decoded_finished <= 1'b1;
                     start_decoding <= 1'b0;
                     decoding_counter <= 6'b0;
