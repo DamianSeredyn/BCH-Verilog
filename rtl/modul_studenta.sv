@@ -479,9 +479,9 @@ begin
                 if (decoding_counter == 0) begin
                     start_decoding <= 1'b1;
                     if (BER == 1)begin
-                        syndrome_coding <= REG_noisedSignalWithBCH1; // tu podstawic wynik szumowy wynikający z 4 najmłodszych bitów zmiennej wejściowej //test value: 16'b101110000111111
+                        syndrome_coding <= REG_noisedSignalWithBCH2; // tu podstawic wynik szumowy wynikający z 4 najmłodszych bitów zmiennej wejściowej //test value: 16'b101110000111111
                     end else begin
-                        syndrome_coding <= noisedSignalWithBCH1;
+                        syndrome_coding <= noisedSignalWithBCH2;
                     end
                 end
 
@@ -502,9 +502,9 @@ begin
                     start_decoding <= 1'b0;
                 end else if (finished_decoding == 1'b0 && decoding_counter == 1) begin
                     if (BER == 1)begin
-                        syndrome_coding <= REG_noisedSignalWithBCH2; //tu podstawic wynik szumowy wynikający z 4 najstarszych bitów zmiennej wejściowej  // test value: 16'b100100011111110
+                        syndrome_coding <= REG_noisedSignalWithBCH1; //tu podstawic wynik szumowy wynikający z 4 najstarszych bitów zmiennej wejściowej  // test value: 16'b100100011111110
                     end else begin
-                        syndrome_coding <= noisedSignalWithBCH2;
+                        syndrome_coding <= noisedSignalWithBCH1;
                     end
                     start_decoding <= 1'b1;
                     decoding_counter <= decoding_counter + 1;
